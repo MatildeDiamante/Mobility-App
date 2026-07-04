@@ -1,0 +1,43 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      -"4200:4200"
+    depends_on:
+      - backend
+    networks:
+      - mobility-application
+    profiles: [frontend]
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      MONGODV_URI: mongodb://mongodb:27017/mydatabase
+    depends_on:
+      - mongo_mobility
+    networks:
+      - mobility-application
+  
+  mongo_mobylity:
+    image: mongo:6
+    volumes:
+      - mongodb-data:/data/db
+    ports:
+      - "27017:27017"
+    network:
+      - mobility-application
+
+networks:
+  mobility-application:
+    name: mobility-application
+    driver: bridge
+    external: true
+
+volumes:
+  mongodb-data:

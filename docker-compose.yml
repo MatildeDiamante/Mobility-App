@@ -4,7 +4,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      -"4200:4200"
+      - "4200:4200"
     depends_on:
       - backend
     networks:
@@ -18,26 +18,26 @@ services:
     ports:
       - "8080:8080"
     environment:
-      MONGODV_URI: mongodb://mongodb:27017/mydatabase
+      MONGODB_URI: mongodb://mongo_mobility:27017/mydatabase
     depends_on:
       - mongo_mobility
     networks:
       - mobility-application
-  
-  mongo_mobylity:
+
+  mongo_mobility:
     image: mongo:6
+    restart: always
     volumes:
       - mongodb-data:/data/db
     ports:
       - "27017:27017"
-    network:
+    networks:
       - mobility-application
 
 networks:
   mobility-application:
     name: mobility-application
     driver: bridge
-    external: true
 
 volumes:
   mongodb-data:

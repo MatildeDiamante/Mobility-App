@@ -1,5 +1,5 @@
 FROM node:22-bookworm-slim
-LABEL mantainer="Matilde Moretti <matilde.moretti95@gmail.com>"
+LABEL maintainer="Matilde Moretti <matilde.moretti95@gmail.com>"
 
 EXPOSE 4200
 

@@ -1,5 +1,5 @@
 // Information about the Erasmus student
-import { Schema, model, Types } from "mongoose";
+import mongoose, { Schema, Types } from "mongoose";
 
 // Definition of the Erasmus duration
 export enum ErasmusDuration {
@@ -8,7 +8,8 @@ export enum ErasmusDuration {
   FULL_YEAR = "Un Anno",
 }
 
-export interface Students {
+// Definition of the object Students's structure with Typescript
+export interface StudentDocument {
   fullName: string;
   academicYear: string;
   hostUniversity: string;
@@ -18,7 +19,8 @@ export interface Students {
   hostCourses: Types.ObjectId[]; // ID list of the foreign university's exams
 }
 
-const studentSchema = new Schema<Students>({
+// Mongoose schema with the realtionships
+const studentSchema = new Schema<StudentDocument>({
   fullName: { type: String, required: true },
   academicYear: { type: String, required: true },
   hostUniversity: { type: String, required: true },
@@ -27,13 +29,17 @@ const studentSchema = new Schema<Students>({
     enum: Object.values(ErasmusDuration),
     required: true,
   },
+  // Relationship with the referent professor
   referentProfessor: {
     type: Schema.Types.ObjectId,
     ref: "Professors",
     required: true,
   },
+  // Relationship with the Ca' Foscari's exams
   homeCourses: [{ type: Schema.Types.ObjectId, ref: "Courses" }],
+  // Relationship with the foreign university's exams
   hostCourses: [{ type: Schema.Types.ObjectId, ref: "Courses" }],
 });
 
-export const Student = model<Students>("Students", studentSchema);
+// Export of the Model
+export const Students = mongoose.model<StudentDocument>("Students", studentSchema);

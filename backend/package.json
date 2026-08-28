@@ -1,7 +1,7 @@
 {
   "name": "mobility-app-backend",
   "version": "1.0.0",
-  "description": "Mobility App using Node.js, Express.js and MongoDB as database",
+  "description": "Mobility App using Node.js, Express.js, Angular and MongoDB as database",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

@@ -8,11 +8,11 @@ export enum ErasmusDuration {
   FULL_YEAR = "Un Anno",
 }
 
-// Definition of the object Students's structure with Typescript
+// Definition of the Model
 export interface StudentDocument {
   fullName: string;
   academicYear: string;
-  hostUniversity: string;
+  hostUniversity: Types.ObjectId;
   duration: ErasmusDuration;
   referentProfessor: Types.ObjectId; // Reference to the Professor model
   homeCourses: Types.ObjectId[]; // ID list of the Ca' Foscari's exams
@@ -23,7 +23,11 @@ export interface StudentDocument {
 const studentSchema = new Schema<StudentDocument>({
   fullName: { type: String, required: true },
   academicYear: { type: String, required: true },
-  hostUniversity: { type: String, required: true },
+  hostUniversity: {
+    type: Schema.Types.ObjectId,
+    ref: "HostUniversities",
+    required: true,
+  },
   duration: {
     type: String,
     enum: Object.values(ErasmusDuration),
@@ -41,5 +45,7 @@ const studentSchema = new Schema<StudentDocument>({
   hostCourses: [{ type: Schema.Types.ObjectId, ref: "Courses" }],
 });
 
-// Export of the Model
-export const Students = mongoose.model<StudentDocument>("Students", studentSchema);
+export const Students = mongoose.model<StudentDocument>(
+  "Students",
+  studentSchema,
+);

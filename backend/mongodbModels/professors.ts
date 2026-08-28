@@ -1,6 +1,7 @@
 // Structure of the professors
 import mongoose, { Schema } from "mongoose";
 
+// Definition of the Model
 export interface ProfessorDocument {
   fullName: string;
   isReferent: boolean;
@@ -12,7 +13,6 @@ const professorSchema = new Schema<ProfessorDocument>({
   isReferent: { type: Boolean, default: false },
 });
 
-// Export of the Model
 export const Professors = mongoose.model<ProfessorDocument>(
   "Professors",
   professorSchema,

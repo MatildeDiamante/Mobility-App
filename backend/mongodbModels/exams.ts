@@ -1,6 +1,6 @@
 // Stucture of the exams both for the ones present at Ca' Foscari and
 // the others abroad
-import mongoose, { Schema, model } from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
 export interface CourseDocument {
   code: string;

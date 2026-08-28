@@ -1,5 +1,5 @@
 // Structure of the professors
-import mongoose, { Schema, model } from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
 export interface ProfessorDocument {
   fullName: string;
@@ -13,4 +13,7 @@ const professorSchema = new Schema<ProfessorDocument>({
 });
 
 // Export of the Model
-export const Professors = mongoose.model<ProfessorDocument>("Professors", professorSchema);
+export const Professors = mongoose.model<ProfessorDocument>(
+  "Professors",
+  professorSchema,
+);

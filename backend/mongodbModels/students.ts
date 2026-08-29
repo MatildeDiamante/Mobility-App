@@ -1,4 +1,4 @@
-// Information about the Erasmus student
+// Information about the Erasmus students
 import mongoose, { Schema, Types } from "mongoose";
 
 // Definition of the Erasmus duration

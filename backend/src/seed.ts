@@ -164,7 +164,7 @@ export const seedDatabase = async () => {
         hostUniversity: uniBelgium._id,
         duration: ErasmusDuration.FULL_YEAR,
         referentProfessor: profLuccio._id,
-        univeCourses: [progOggetti._id, reteCalcolatori._id, basiDati._id],
+        homeCourses: [progOggetti._id, reteCalcolatori._id, basiDati._id],
         hostCourses: [opSystems._id, advDistAlgorithms._id, socNetAnalysis._id],
       },
       {
@@ -173,7 +173,7 @@ export const seedDatabase = async () => {
         hostUniversity: uniMunich._id,
         duration: ErasmusDuration.SECOND_SEMESTER,
         referentProfessor: profBergamasco._id,
-        univeCourses: [progOggetti._id, ingSoftware._id, artIntelligence._id],
+        homeCourses: [progOggetti._id, ingSoftware._id, artIntelligence._id],
         hostCourses: [softArch._id, computerNets._id, dbSystems._id],
       },
       {
@@ -182,7 +182,7 @@ export const seedDatabase = async () => {
         hostUniversity: uniMunich._id,
         duration: ErasmusDuration.FULL_YEAR,
         referentProfessor: profPittarello._id,
-        univeCourses: [tecAppWeb._id, ingSoftware._id, reteCalcolatori._id],
+        homeCourses: [tecAppWeb._id, ingSoftware._id, reteCalcolatori._id],
         hostCourses: [softArch._id, computerNets._id, dbSystems._id],
       },
     ]);

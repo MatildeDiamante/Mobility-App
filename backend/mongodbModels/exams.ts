@@ -3,7 +3,7 @@
 import mongoose, { Schema, Types } from "mongoose";
 
 // Distinguishes Ca' Foscari's exams from the ones
-// offered by the hosting university
+// held by the hosting university
 export enum CourseType {
   HOME = "home",
   HOST = "host",

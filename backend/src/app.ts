@@ -3,6 +3,7 @@ import cors from "cors";
 import express from "express";
 import helmet from "helmet"; // Helmet helps make Node/Express apps more secure
 import cookieParser from "cookie-parser";
+import authRouter from "./routes/auth";
 
 export const app = express();
 
@@ -20,8 +21,11 @@ app.use(
 // Middleware that analyses JSON HTTP requests
 app.use(express.json());
 
-// Middleware cookies ?? RIVEDI COMMENTO!
+// Middleware cookies
 app.use(cookieParser());
+
+// Authentication route
+app.use("/api/auth", authRouter);
 
 // Endpoints:
 // to check if the backend is active

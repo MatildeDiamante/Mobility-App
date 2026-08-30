@@ -39,11 +39,11 @@ router.post("/login", async (request, response) => {
     );
 
     // Sends token to the cookie
-    response.cookie("accessTOken", token, {
+    response.cookie("accessToken", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 60 + 60 * 1000, // 1 hour
+      maxAge: 60 * 60 * 1000, // 1 hour
     });
 
     response.json({
@@ -60,16 +60,16 @@ router.post("/login", async (request, response) => {
 
 // POST /api/auth/logout
 router.post("/logout", (request, response) => {
-    response.clearCookie("accessToken");
-    response.json({mesdage: "Logged out successfully"});
+  response.clearCookie("accessToken");
+  response.json({ message: "Logged out successfully" });
 });
 
 // GET /api/auth/me
 router.get("/me", authenticate, (request: AuthenticatedRequest, response) => {
-    response.json({
-        userId: request.user!.userId,
-        role: request.user!.role,
-    });
+  response.json({
+    userId: request.user!.userId,
+    role: request.user!.role,
+  });
 });
 
 export default router;

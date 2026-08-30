@@ -1,7 +1,10 @@
 // Upload PDF and application creation
 import { Router } from "express";
 import multer from "multer";
-import { Applications } from "../../mongodbModels/applications";
+import {
+  Applications,
+  ApplicationStatus,
+} from "../../mongodbModels/applications";
 import {
   AuthenticatedRequest,
   authenticate,
@@ -108,7 +111,7 @@ router.patch(
       }
 
       // Checks if the application is still on "submitted"
-      if (application.status !== "submitted") {
+      if (application.status !== ApplicationStatus.SUBMITTED) {
         response.status(400).json({
           message: "Can only modify application in submitted status",
         });
@@ -136,6 +139,52 @@ router.patch(
       response
         .status(400)
         .json({ message: "Failed to upload application, error" });
+    }
+  },
+);
+
+// GET /api/applications/:id
+// Professor can see applications where he is the referent
+// Staff can see any application
+router.get(
+  "/:id",
+  authenticate,
+  async (request: AuthenticatedRequest, response) => {
+    try {
+      const application = await Applications.findById(
+        request.params.id,
+      ).populate(
+        "student hostUniversity referentProfessor homeCourses hostCourses",
+      );
+
+      if (!application) {
+        response.status(404).json({ message: "Application not found" });
+        return;
+      }
+
+      // Check permissions based on user role
+      const isProfessor = request.user!.role === UserRole.PROFESSOR;
+      const isStaff = request.user!.role === UserRole.OFFICE_STAFF;
+
+      // Professor can see only applications where he is the referent
+      const isReferent =
+        application.referentProfessor._id.toString() === request.user!.userId;
+
+      if (isProfessor && !isReferent) {
+        response.status(403).json({ message: "Forbidden" });
+        return;
+      }
+
+      if (!isProfessor && !isStaff) {
+        response.status(403).json({ message: "Forbidden" });
+        return;
+      }
+
+      response.json(application);
+    } catch (error) {
+      response
+        .status(500)
+        .json({ message: "Failed to fetch application", error });
     }
   },
 );

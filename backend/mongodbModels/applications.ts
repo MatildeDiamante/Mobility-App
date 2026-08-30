@@ -47,7 +47,7 @@ const applicationSchema = new Schema<ApplicationDocument>(
     },
     referentProfessor: {
       type: Schema.Types.ObjectId,
-      ref: "Profesors",
+      ref: "Professors",
       required: true,
     },
     homeCourses: [

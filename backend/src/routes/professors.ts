@@ -119,11 +119,16 @@ router.patch(
           return;
         }
 
-        if (decision === "approved_changes") {
+        if (decision === "approve_changes") {
           application.homeCourses = application.proposedHomeCourses;
           application.hostCourses = application.proposedHostCourses;
+          application.courseChangeStatus = CourseChangeStatus.APPROVED;
+          application.courseChangeComment =
+            comment || "Student course change approved";
         } else if (decision === "reject_changes") {
           application.courseChangeStatus = CourseChangeStatus.REJECTED;
+          application.courseChangeComment =
+            comment || "Student course change rejected; original mapping kept";
         }
 
         application.courseChangeDecisionDate = new Date();
@@ -133,9 +138,9 @@ router.patch(
         application.proposedHomeCourses = undefined;
         application.proposedHostCourses = undefined;
 
-        if (comment) {
+        /* if (comment) {
           application.professorComment = comment;
-        }
+        } */
 
         await application.save();
 

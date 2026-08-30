@@ -21,7 +21,9 @@ export interface ApplicationDocument {
   documentPath: string;
   status: ApplicationStatus;
   professorComment?: string;
+  professorDecisionDate?: Date;
   officeComment?: string;
+  officeVerificationDate?: Date;
 }
 
 // Mongoose schema with the realtionships
@@ -70,7 +72,9 @@ const applicationSchema = new Schema<ApplicationDocument>(
       default: ApplicationStatus.SUBMITTED,
     },
     professorComment: String,
+    professorDecisionDate: Date,
     officeComment: String,
+    officeVerificationDate: Date,
   },
   { timestamps: true },
 );

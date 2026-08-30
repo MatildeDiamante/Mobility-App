@@ -67,12 +67,15 @@ router.patch(
         return;
       }
 
-      // Update the application status and add office comment
+      // Update the application status and add office comment and verification date
       application.status = ApplicationStatus.OFFICE_VERIFIED;
 
       if (comment) {
         application.officeComment = comment;
       }
+
+      // Automatically set the office's verification date
+      application.officeVerificationDate = new Date();
 
       await application.save();
 

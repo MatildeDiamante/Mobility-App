@@ -74,7 +74,7 @@ router.patch(
         return;
       }
 
-      // Update the application status and add professor's comment
+      // Update the application status and add professor's comment and decision date
       if (decision === "approve") {
         application.status = ApplicationStatus.PROFESSOR_APPROVED;
       } else {
@@ -84,6 +84,9 @@ router.patch(
       if (comment) {
         application.professorComment = comment;
       }
+
+      // Automatically set the professor's decision date
+      application.professorDecisionDate = new Date();
 
       await application.save();
 

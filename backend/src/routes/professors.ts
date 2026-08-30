@@ -3,6 +3,7 @@ import { Router } from "express";
 import {
   Applications,
   ApplicationStatus,
+  CourseChangeStatus,
 } from "../../mongodbModels/applications";
 import {
   AuthenticatedRequest,
@@ -45,10 +46,18 @@ router.patch(
     try {
       const { decision, comment } = request.body;
 
-      // Validate decision parameter
-      if (!decision || !["approve", "reject"].includes(decision)) {
+      // Professors can validate an application using the following parameters
+      const validDecisions = [
+        "approve",
+        "reject",
+        "approve_changes",
+        "reject_changes",
+      ];
+
+      if (!decision || !validDecisions.includes(decision)) {
         response.status(400).json({
-          message: "Decision must be 'approve' or 'reject'",
+          message:
+            "Decision must be 'approve' or 'reject', 'approve_changes' or 'reject_changes'",
         });
         return;
       }
@@ -66,34 +75,79 @@ router.patch(
         return;
       }
 
-      // Check if the application is still in "submitted" status
-      if (application.status !== ApplicationStatus.SUBMITTED) {
-        response.status(400).json({
-          message: "Can only decide on applications in submitted status",
+      // Check if the initial application is still in "submitted" status
+      if (["approve", "reject"].includes(decision)) {
+        if (application.status !== ApplicationStatus.SUBMITTED) {
+          response.status(400).json({
+            message: "Can only decide on applications in submitted status",
+          });
+          return;
+        }
+
+        // Update the application status and add professor's comment and decision date
+        if (decision === "approve") {
+          application.status = ApplicationStatus.PROFESSOR_APPROVED;
+        } else {
+          application.status = ApplicationStatus.PROFESSOR_REJECTED;
+        }
+
+        if (comment) {
+          application.professorComment = comment;
+        }
+
+        // Automatically set the professor's decision date
+        application.professorDecisionDate = new Date();
+
+        await application.save();
+
+        response.json({
+          message: `Application ${decision}ed successfully`,
+          application,
         });
         return;
       }
 
-      // Update the application status and add professor's comment and decision date
-      if (decision === "approve") {
-        application.status = ApplicationStatus.PROFESSOR_APPROVED;
-      } else {
-        application.status = ApplicationStatus.PROFESSOR_REJECTED;
+      // Professor can approve or reject modified courses
+      if (["approve_changes", "reject_changes"].includes(decision)) {
+        if (
+          !application.proposedHomeCourses?.length ||
+          !application.proposedHostCourses?.length
+        ) {
+          response.status(400).json({
+            message: "There are no pending course changes to review",
+          });
+          return;
+        }
+
+        if (decision === "approved_changes") {
+          application.homeCourses = application.proposedHomeCourses;
+          application.hostCourses = application.proposedHostCourses;
+        } else if (decision === "reject_changes") {
+          application.courseChangeStatus = CourseChangeStatus.REJECTED;
+        }
+
+        application.courseChangeDecisionDate = new Date();
+
+        application.originalHomeCourses = undefined;
+        application.originalHostCourses = undefined;
+        application.proposedHomeCourses = undefined;
+        application.proposedHostCourses = undefined;
+
+        if (comment) {
+          application.professorComment = comment;
+        }
+
+        await application.save();
+
+        response.json({
+          message:
+            decision === "approve_changes"
+              ? "Coourse changes approved successfully"
+              : "Course changes rejected; original mapping remains valid",
+          application,
+        });
+        return;
       }
-
-      if (comment) {
-        application.professorComment = comment;
-      }
-
-      // Automatically set the professor's decision date
-      application.professorDecisionDate = new Date();
-
-      await application.save();
-
-      response.json({
-        message: `Application ${decision}ed successfully`,
-        application,
-      });
     } catch (error) {
       response.status(400).json({
         message: "Failed to update application decision",

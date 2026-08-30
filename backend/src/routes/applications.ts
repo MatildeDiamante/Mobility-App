@@ -4,6 +4,7 @@ import multer from "multer";
 import {
   Applications,
   ApplicationStatus,
+  CourseChangeStatus,
 } from "../../mongodbModels/applications";
 import {
   AuthenticatedRequest,
@@ -110,10 +111,27 @@ router.patch(
         return;
       }
 
-      // Checks if the application is still on "submitted"
+      /* Checks if the application is still on "submitted"
       if (application.status !== ApplicationStatus.SUBMITTED) {
         response.status(400).json({
           message: "Can only modify application in submitted status",
+        });
+        return;
+      } */
+
+      // Allow students to change dates and courses
+      const isInitialSubmission =
+        application.status === ApplicationStatus.SUBMITTED;
+      const canProposeChanges = [
+        ApplicationStatus.PROFESSOR_APPROVED,
+        ApplicationStatus.OFFICE_VERIFIED,
+        ApplicationStatus.COMPLETED,
+      ].includes(application.status);
+
+      if (!isInitialSubmission && !canProposeChanges) {
+        response.status(400).json({
+          message:
+            "Can only modify the application while it's in submitted or after approval",
         });
         return;
       }
@@ -126,11 +144,39 @@ router.patch(
       application.duration = request.body.duration || application.duration;
       application.referentProfessor =
         request.body.referentProfessor || application.referentProfessor;
-      if (request.body.homeCourses) {
-        application.homeCourses = JSON.parse(request.body.homeCourses);
+
+      // New mobility dates
+      if (request.body.startDate) {
+        application.startDate = new Date(request.body.startDate);
       }
+      if (request.body.endDate) {
+        application.endDate = new Date(request.body.endDate);
+      }
+
+      // Possibility to modify courses
+      if (request.body.homeCourses) {
+        //application.homeCourses = JSON.parse(request.body.homeCourses);
+
+        if (application.status === ApplicationStatus.SUBMITTED) {
+          application.homeCourses = JSON.parse(request.body.homeCourses);
+        } else {
+          application.proposedHomeCourses = JSON.parse(
+            request.body.homeCourses,
+          );
+          application.courseChangeStatus = CourseChangeStatus.PENDING;
+        }
+      }
+
       if (request.body.hostCourses) {
-        application.hostCourses = JSON.parse(request.body.hostCourses);
+        //application.hostCourses = JSON.parse(request.body.hostCourses);
+        if (application.status === ApplicationStatus.SUBMITTED) {
+          application.hostCourses = JSON.parse(request.body.hostCourses);
+        } else {
+          application.proposedHostCourses = JSON.parse(
+            request.body.hostCourses,
+          );
+          application.courseChangeStatus = CourseChangeStatus.PENDING;
+        }
       }
 
       await application.save();

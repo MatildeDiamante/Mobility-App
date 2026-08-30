@@ -141,7 +141,7 @@ router.patch(
 );
 
 // GET /api/applications/:id/document
-// PDF download
+// PDF download - permissions: student (owner), professor (referent), staff (all)
 router.get(
   "/:id/document",
   authenticate,
@@ -154,14 +154,27 @@ router.get(
         return;
       }
 
-      // Checks if the user is the owner of a staff member
-      const isOwner = application.student.toString() === request.user!.userId;
+      // Check permissions based on user role
+      const isStudent = request.user!.role === UserRole.STUDENT;
+      const isProfessor = request.user!.role === UserRole.PROFESSOR;
       const isStaff = request.user!.role === UserRole.OFFICE_STAFF;
 
-      if (!isOwner && !isStaff) {
+      // Student can download only his own application
+      const isOwner = application.student.toString() === request.user!.userId;
+
+      // Professor can download applications where he is the referent
+      const isReferent =
+        application.referentProfessor.toString() === request.user!.userId;
+
+      // Check if user has permission
+      const hasPermission =
+        (isStudent && isOwner) || (isProfessor && isReferent) || isStaff;
+
+      if (!hasPermission) {
         response.status(403).json({ message: "Forbidden" });
         return;
       }
+
       response.download(application.documentPath);
     } catch (error) {
       response

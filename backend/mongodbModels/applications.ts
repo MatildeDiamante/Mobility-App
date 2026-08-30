@@ -7,6 +7,31 @@ export enum ApplicationStatus {
   PROFESSOR_APPROVED = "professor_approved",
   PROFESSOR_REJECTED = "professor_rejected",
   OFFICE_VERIFIED = "office_verified",
+  COMPLETED = "completed",
+}
+
+export function canBeMarkedCompleted(application: {
+  academicYear?: string;
+  hostUniversity?: Types.ObjectId | string | null;
+  duration?: string;
+  referentProfessor?: Types.ObjectId | string | null;
+  homeCourses?: Types.ObjectId[] | string[];
+  hostCourses?: Types.ObjectId[] | string[];
+  documentPath?: string;
+  learningAgreementApproved?: boolean;
+}): boolean {
+  return Boolean(
+    application.academicYear &&
+    application.hostUniversity &&
+    application.duration &&
+    application.referentProfessor &&
+    application.documentPath &&
+    Array.isArray(application.homeCourses) &&
+    application.homeCourses.length === 3 &&
+    Array.isArray(application.hostCourses) &&
+    application.hostCourses.length === 3 &&
+    application.learningAgreementApproved === true,
+  );
 }
 
 // Definition of the Model
@@ -19,6 +44,7 @@ export interface ApplicationDocument {
   homeCourses: Types.ObjectId[];
   hostCourses: Types.ObjectId[];
   documentPath: string;
+  learningAgreementApproved?: boolean;
   status: ApplicationStatus;
   professorComment?: string;
   professorDecisionDate?: Date;
@@ -65,6 +91,10 @@ const applicationSchema = new Schema<ApplicationDocument>(
     documentPath: {
       type: String,
       required: true,
+    },
+    learningAgreementApproved: {
+      type: Boolean,
+      default: false,
     },
     status: {
       type: String,

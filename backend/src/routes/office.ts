@@ -3,6 +3,7 @@ import { Router } from "express";
 import {
   Applications,
   ApplicationStatus,
+  canBeMarkedCompleted,
 } from "../../mongodbModels/applications";
 import {
   AuthenticatedRequest,
@@ -67,8 +68,28 @@ router.patch(
         return;
       }
 
+      const isComplete = canBeMarkedCompleted({
+        academicYear: application.academicYear,
+        hostUniversity: application.hostUniversity,
+        duration: application.duration,
+        referentProfessor: application.referentProfessor,
+        homeCourses: application.homeCourses,
+        hostCourses: application.hostCourses,
+        documentPath: application.documentPath,
+        learningAgreementApproved: true,
+      });
+
+      if (!isComplete) {
+        response.status(400).json({
+          message:
+            "Application cannot be marked as completed: missing required fields or learning agreement is not approved",
+        });
+        return;
+      }
+
       // Update the application status and add office comment and verification date
-      application.status = ApplicationStatus.OFFICE_VERIFIED;
+      application.status = ApplicationStatus.COMPLETED;
+      application.learningAgreementApproved = true;
 
       if (comment) {
         application.officeComment = comment;
@@ -80,7 +101,7 @@ router.patch(
       await application.save();
 
       response.json({
-        message: "Application verified successfully",
+        message: "Application completed successfully",
         application,
       });
     } catch (error) {

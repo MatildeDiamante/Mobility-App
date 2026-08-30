@@ -4,6 +4,7 @@ import express from "express";
 import helmet from "helmet"; // Helmet helps make Node/Express apps more secure
 import cookieParser from "cookie-parser";
 import authRouter from "./routes/auth";
+import applicationsRouter from "./routes/applications";
 
 export const app = express();
 
@@ -26,6 +27,7 @@ app.use(cookieParser());
 
 // Authentication route
 app.use("/api/auth", authRouter);
+app.use("/api/applications", applicationsRouter);
 
 // Endpoints:
 // to check if the backend is active

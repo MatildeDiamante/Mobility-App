@@ -10,6 +10,13 @@ export enum ApplicationStatus {
   COMPLETED = "completed",
 }
 
+export enum CourseChangeStatus {
+  NONE = "none",
+  PENDING = "pending",
+  APPROVED = "approved",
+  REJECTED = "rejected",
+}
+
 export function canBeMarkedCompleted(application: {
   academicYear?: string;
   hostUniversity?: Types.ObjectId | string | null;
@@ -41,8 +48,23 @@ export interface ApplicationDocument {
   hostUniversity: Types.ObjectId;
   duration: string;
   referentProfessor: Types.ObjectId;
+
   homeCourses: Types.ObjectId[];
   hostCourses: Types.ObjectId[];
+
+  startDate?: Date;
+  endDate?: Date;
+
+  originalHomeCourses?: Types.ObjectId[];
+  originalHostCourses?: Types.ObjectId[];
+
+  proposedHomeCourses?: Types.ObjectId[];
+  proposedHostCourses?: Types.ObjectId[];
+
+  courseChangeStatus?: CourseChangeStatus;
+  courseChangeComment?: string;
+  courseChangeDecisionDate?: Date;
+
   documentPath: string;
   learningAgreementApproved?: boolean;
   status: ApplicationStatus;
@@ -88,6 +110,23 @@ const applicationSchema = new Schema<ApplicationDocument>(
         required: true,
       },
     ],
+    startDate: Date,
+    endDate: Date,
+
+    originalHomeCourses: [{ type: Schema.Types.ObjectId, ref: "Courses" }],
+    originalHostCourses: [{ type: Schema.Types.ObjectId, ref: "Courses" }],
+    proposedHomeCourses: [{ type: Schema.Types.ObjectId, ref: "Courses" }],
+    proposedHostCourses: [{ type: Schema.Types.ObjectId, ref: "Courses" }],
+
+    courseChangeStatus: {
+      type: String,
+      enum: Object.values(CourseChangeStatus),
+      default: CourseChangeStatus.NONE,
+    },
+
+    courseChangeComment: String,
+    courseChangeDecisionDate: Date,
+
     documentPath: {
       type: String,
       required: true,

@@ -7,6 +7,7 @@ import authRouter from "./routes/auth";
 import applicationsRouter from "./routes/applications";
 import professorsRouter from "./routes/professors";
 import officeRouter from "./routes/office";
+import listsRouter from "./routes/lists";
 
 export const app = express();
 
@@ -32,6 +33,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/applications", applicationsRouter);
 app.use("/api/professor", professorsRouter);
 app.use("/api/office", officeRouter);
+app.use("/api/lists", listsRouter);
 
 // Endpoints:
 // to check if the backend is active

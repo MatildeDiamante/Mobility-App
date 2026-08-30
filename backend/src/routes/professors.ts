@@ -107,7 +107,7 @@ router.patch(
         return;
       }
 
-      // Professor can approve or reject modified courses
+      // Professor can approve or reject modified courses and mapping
       if (["approve_changes", "reject_changes"].includes(decision)) {
         if (
           !application.proposedHomeCourses?.length ||

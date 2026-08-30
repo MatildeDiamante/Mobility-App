@@ -100,6 +100,7 @@ router.patch(
   "/me",
   authenticate,
   authorize(UserRole.STUDENT),
+  upload.single("document"),
   async (request: AuthenticatedRequest, response) => {
     try {
       const application = await Applications.findOne({
@@ -107,8 +108,7 @@ router.patch(
       });
 
       if (!application) {
-        response.status(404).json({ message: "Application not found" });
-        return;
+        return response.status(404).json({ message: "Application not found" });
       }
 
       /* Checks if the application is still on "submitted"
@@ -129,14 +129,13 @@ router.patch(
       ].includes(application.status);
 
       if (!isInitialSubmission && !canProposeChanges) {
-        response.status(400).json({
+        return response.status(400).json({
           message:
             "Can only modify the application while it's in submitted or after approval",
         });
-        return;
       }
 
-      // Update sections
+      // Students can change year, host university or referent professor
       application.academicYear =
         request.body.academicYear || application.academicYear;
       application.hostUniversity =
@@ -144,6 +143,22 @@ router.patch(
       application.duration = request.body.duration || application.duration;
       application.referentProfessor =
         request.body.referentProfessor || application.referentProfessor;
+
+      //If students modifies host courses and mapping after the first approvation
+      const isCourseChangeRequest =
+        request.body.homeCourses || request.body.hostCourses;
+
+      if (isCourseChangeRequest && !request.file) {
+        return response.status(400).json({
+          message:
+            "A new Learning Agreement PDF is required when modifying host courses or mapping",
+        });
+      }
+
+      if (request.file && isCourseChangeRequest) {
+        application.documentPath = request.file.path;
+        application.learningAgreementApproved = false;
+      }
 
       // New mobility dates
       if (request.body.startDate) {

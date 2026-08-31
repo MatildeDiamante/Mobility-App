@@ -72,6 +72,15 @@ export interface ApplicationDocument {
   professorDecisionDate?: Date;
   officeComment?: string;
   officeVerificationDate?: Date;
+
+  transcriptDocumentPath?: string;
+  transcriptUploadedAt?: Date;
+  transcriptApproved?: boolean;
+  transcriptReviewDate?: Date;
+  transcriptComment?: string;
+
+  approvedHostCourses?: Types.ObjectId[];
+  approvedHomeCourses?: Types.ObjectId[];
 }
 
 // Mongoose schema with the realtionships
@@ -144,6 +153,17 @@ const applicationSchema = new Schema<ApplicationDocument>(
     professorDecisionDate: Date,
     officeComment: String,
     officeVerificationDate: Date,
+
+    transcriptDocumentPath: String,
+    transcriptUploadedAt: Date,
+    transcriptApproved: {
+      type: Boolean,
+      default: false,
+    },
+    transcriptReviewDate: Date,
+    transcriptComment: String,
+    approvedHostCourses: [{ type: Schema.Types.ObjectId, ref: "Coourses" }],
+    approvedHomeCourses: [{ type: Schema.Types.ObjectId, ref: "Courses" }],
   },
   { timestamps: true },
 );

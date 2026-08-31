@@ -12,6 +12,7 @@ import {
   authorize,
 } from "../middleware/auth";
 import { UserRole } from "../../mongodbModels/userRole";
+import { app } from "../app";
 
 const router = Router();
 
@@ -90,6 +91,52 @@ router.get(
       response
         .status(500)
         .json({ message: "Failed to fetch application", error });
+    }
+  },
+);
+
+// post /api/applications/me/transcript
+// Students can upload the Transcrip of Records in PDF
+router.post(
+  "/me/transcript",
+  authenticate,
+  authorize(UserRole.STUDENT),
+  upload.single("transcript"),
+  async (request: AuthenticatedRequest, response) => {
+    try {
+      // Checks that a PDF file was uploaded
+      if (!request.file) {
+        return response
+          .status(400)
+          .json({ message: "Transcript of Records PDF is required" });
+      }
+
+      // Finds students' application
+      const application = await Applications.findOne({
+        student: request.user!.userId,
+      });
+
+      if (!application) {
+        return response.status(404).json({ message: "Application not found" });
+      }
+
+      // Saves the uploaded file path and resets the review date
+      application.transcriptDocumentPath = request.file.path;
+      application.transcriptUploadedAt = new Date();
+      application.transcriptApproved = false;
+      application.transcriptReviewDate = undefined;
+      application.transcriptComment = undefined;
+
+      await application.save();
+
+      response.status(201).json({
+        message: "Transcript of Records uploaded successfully",
+        application,
+      });
+    } catch (error) {
+      response
+        .status(400)
+        .json({ message: "Failed to upload Transcript of Records", error });
     }
   },
 );

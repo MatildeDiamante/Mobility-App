@@ -11,6 +11,7 @@ import {
   authorize,
 } from "../middleware/auth";
 import { UserRole } from "../../mongodbModels/userRole";
+import { app } from "../app";
 
 const router = Router();
 
@@ -32,6 +33,70 @@ router.get(
       response
         .status(500)
         .json({ message: "Failed to fetch applications", error });
+    }
+  },
+);
+
+// GET /api7professor/appliccations
+// the referent professor reviews the transcript of records
+// uploaded by the student
+router.patch(
+  "applications/:id/transcript/review",
+  authenticate,
+  authorize(UserRole.PROFESSOR),
+  async (request: AuthenticatedRequest, response) => {
+    try {
+      const { approved, comment, approvedHostCourses } = request.body;
+
+      // Checks that application exists
+      const application = await Applications.findById(request.params.id);
+
+      if (!application) {
+        return response.status(404).json({ message: "Application not found" });
+      }
+
+      // Verifyes that the professor is the referent
+      if (application.referentProfessor.toString() !== request.user!.userId) {
+        return response.status(403).json({ message: "Forbidden" });
+      }
+
+      // Checks if the transcription was uploaded
+      if (!application.transcriptDocumentPath) {
+        return response
+          .status(400)
+          .json({
+            message: "The student has not uploaded a Transcript of Records yet",
+          });
+      }
+
+      // Professor's decision and esplanation
+      application.transcriptApproved = Boolean(approved);
+      application.transcriptReviewDate = new Date();
+      application.transcriptComment = comment || "";
+
+      // If approved, stores the passed courses
+      if (approved) {
+        application.approvedHostCourses = approvedHostCourses || [];
+        application.approvedHomeCourses =
+          approvedHostCourses || application.hostCourses;
+      } else {
+        application.approvedHostCourses = [];
+        application.approvedHomeCourses = [];
+      }
+
+      await application.save();
+
+      // updated application with the final review decision
+      response.json({
+        message: approved
+          ? "Transcript approved successfully"
+          : "Transcript rejected",
+        application,
+      });
+    } catch (error) {
+      response
+        .status(400)
+        .json({ message: "Failed to review Transcript of Records", error });
     }
   },
 );
@@ -119,6 +184,7 @@ router.patch(
           return;
         }
 
+        // If approved, stores the new courses and mapping
         if (decision === "approve_changes") {
           application.homeCourses = application.proposedHomeCourses;
           application.hostCourses = application.proposedHostCourses;

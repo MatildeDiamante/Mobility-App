@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Applications = exports.ApplicationStatus = void 0;
+exports.Applications = exports.CourseChangeStatus = exports.ApplicationStatus = void 0;
 exports.canBeMarkedCompleted = canBeMarkedCompleted;
 // Information about the application
 const mongoose_1 = __importStar(require("mongoose"));
@@ -46,6 +46,14 @@ var ApplicationStatus;
     ApplicationStatus["OFFICE_VERIFIED"] = "office_verified";
     ApplicationStatus["COMPLETED"] = "completed";
 })(ApplicationStatus || (exports.ApplicationStatus = ApplicationStatus = {}));
+// Definition of the modified courses
+var CourseChangeStatus;
+(function (CourseChangeStatus) {
+    CourseChangeStatus["NONE"] = "none";
+    CourseChangeStatus["PENDING"] = "pending";
+    CourseChangeStatus["APPROVED"] = "approved";
+    CourseChangeStatus["REJECTED"] = "rejected";
+})(CourseChangeStatus || (exports.CourseChangeStatus = CourseChangeStatus = {}));
 function canBeMarkedCompleted(application) {
     return Boolean(application.academicYear &&
         application.hostUniversity &&
@@ -93,6 +101,19 @@ const applicationSchema = new mongoose_1.Schema({
             required: true,
         },
     ],
+    startDate: Date,
+    endDate: Date,
+    originalHomeCourses: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Courses" }],
+    originalHostCourses: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Courses" }],
+    proposedHomeCourses: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Courses" }],
+    proposedHostCourses: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Courses" }],
+    courseChangeStatus: {
+        type: String,
+        enum: Object.values(CourseChangeStatus),
+        default: CourseChangeStatus.NONE,
+    },
+    courseChangeComment: String,
+    courseChangeDecisionDate: Date,
     documentPath: {
         type: String,
         required: true,
@@ -110,6 +131,29 @@ const applicationSchema = new mongoose_1.Schema({
     professorDecisionDate: Date,
     officeComment: String,
     officeVerificationDate: Date,
+    passedHostCourses: [
+        {
+            course: { type: mongoose_1.Schema.Types.ObjectId, ref: "Courses" },
+            grade: String,
+            examDate: Date,
+            status: {
+                type: String,
+                enum: ["pending", "approved", "rejected"],
+                default: "pending",
+            },
+            comment: String,
+        },
+    ],
+    transcriptDocumentPath: String,
+    transcriptUploadedAt: Date,
+    transcriptApproved: {
+        type: Boolean,
+        default: false,
+    },
+    transcriptReviewDate: Date,
+    transcriptComment: String,
+    approvedHostCourses: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Coourses" }],
+    approvedHomeCourses: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Courses" }],
 }, { timestamps: true });
 // Custom validations for applications
 applicationSchema.pre("save", async function (next) {

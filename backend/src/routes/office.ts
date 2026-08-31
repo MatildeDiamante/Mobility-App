@@ -69,7 +69,7 @@ router.patch(
         return;
       }
 
-      // Final ckecks before closing the application
+      // Final checks before closing the application
       const hasLearningAgreementApproved =
         application.learningAgreementApproved === true;
 

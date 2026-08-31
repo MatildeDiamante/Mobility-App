@@ -41,7 +41,7 @@ router.get(
 // the referent professor reviews the transcript of records
 // uploaded by the student
 router.patch(
-  "applications/:id/transcript/review",
+  "/applications/:id/transcript/review",
   authenticate,
   authorize(UserRole.PROFESSOR),
   async (request: AuthenticatedRequest, response) => {

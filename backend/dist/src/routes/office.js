@@ -42,30 +42,43 @@ router.patch("/applications/:id/verify", auth_1.authenticate, (0, auth_1.authori
             });
             return;
         }
-        const isComplete = (0, applications_1.canBeMarkedCompleted)({
-            academicYear: application.academicYear,
-            hostUniversity: application.hostUniversity,
-            duration: application.duration,
-            referentProfessor: application.referentProfessor,
-            homeCourses: application.homeCourses,
-            hostCourses: application.hostCourses,
-            documentPath: application.documentPath,
-            learningAgreementApproved: true,
-        });
+        // Final checks before closing the application:
+        // 1. Learning Agreement must have been approved.
+        // 2. Transcript of Records must have been approved by the referent professor.
+        // 3. All passed exams must be accepted by the professor.
+        const hasLearningAgreementApproved = application.learningAgreementApproved === true;
+        const hasTranscriptApproved = application.transcriptApproved === true;
+        const hasApprovedExams = Array.isArray(application.passedHostCourses) &&
+            application.passedHostCourses.length > 0 &&
+            application.passedHostCourses.every((exam) => exam.status === "approved");
+        const isComplete = hasLearningAgreementApproved &&
+            hasTranscriptApproved &&
+            hasApprovedExams &&
+            Boolean(application.academicYear) &&
+            Boolean(application.hostUniversity) &&
+            Boolean(application.duration) &&
+            Boolean(application.referentProfessor) &&
+            Array.isArray(application.homeCourses) &&
+            application.homeCourses.length === 3 &&
+            Array.isArray(application.hostCourses) &&
+            application.hostCourses.length === 3;
         if (!isComplete) {
             response.status(400).json({
-                message: "Application cannot be marked as completed: missing required fields or learning agreement is not approved",
+                message: "Application cannot be marked as completed: missing required fields, learning agreement not approved, transcript not approved, or exams not accepted",
             });
             return;
         }
         // Update the application status and add office comment and verification date
         application.status = applications_1.ApplicationStatus.COMPLETED;
-        application.learningAgreementApproved = true;
-        if (comment) {
-            application.officeComment = comment;
-        }
-        // Automatically set the office's verification date
+        application.officeComment =
+            comment || "Application verififed and closed by office staff";
+        //application.learningAgreementApproved = true;
         application.officeVerificationDate = new Date();
+        /*if (comment) {
+          application.officeComment = comment;
+        } */
+        /* Automatically set the office's verification date
+        application.officeVerificationDate = new Date(); */
         await application.save();
         response.json({
             message: "Application completed successfully",

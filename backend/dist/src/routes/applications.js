@@ -73,25 +73,101 @@ router.get("/me", auth_1.authenticate, (0, auth_1.authorize)(userRole_1.UserRole
             .json({ message: "Failed to fetch application", error });
     }
 });
+// POST /api/applications/me/exams
+// Students can update exams scores
+router.post("/me/exams", auth_1.authenticate, (0, auth_1.authorize)(userRole_1.UserRole.STUDENT), async (request, response) => {
+    try {
+        // Checks if student's application exist
+        const application = await applications_1.Applications.findOne({
+            student: request.user.userId,
+        });
+        if (!application) {
+            return response.status(404).json({ message: "Application not found" });
+        }
+        const { passedHostCourses } = request.body;
+        // Verifies that the taken exams are in an array format
+        if (!Array.isArray(passedHostCourses)) {
+            return response.status(400).json({ message: "passedHostCourses must be an array", });
+        }
+        // Transform each exam in an object
+        application.passedHostCourses = passedHostCourses.map((exam) => ({
+            course: exam.course,
+            grade: exam.grade,
+            examDate: new Date(exam.examDate),
+            status: "pending",
+        }));
+        await application.save();
+        response.json({ message: "Passed exams submitted for review", application, });
+    }
+    catch (error) {
+        response.status(400).json({ message: "Failed to save passed esams", error, });
+    }
+});
+// POST /api/applications/me/transcript
+// Students can upload the Transcrip of Records in PDF
+router.post("/me/transcript", auth_1.authenticate, (0, auth_1.authorize)(userRole_1.UserRole.STUDENT), upload.single("transcript"), async (request, response) => {
+    try {
+        // Checks that a PDF file was uploaded
+        if (!request.file) {
+            return response
+                .status(400)
+                .json({ message: "Transcript of Records PDF is required" });
+        }
+        // Finds students' application
+        const application = await applications_1.Applications.findOne({
+            student: request.user.userId,
+        });
+        if (!application) {
+            return response.status(404).json({ message: "Application not found" });
+        }
+        // Saves the uploaded file path and resets the review date
+        application.transcriptDocumentPath = request.file.path;
+        application.transcriptUploadedAt = new Date();
+        application.transcriptApproved = false;
+        application.transcriptReviewDate = undefined;
+        application.transcriptComment = undefined;
+        await application.save();
+        response.status(201).json({
+            message: "Transcript of Records uploaded successfully",
+            application,
+        });
+    }
+    catch (error) {
+        response
+            .status(400)
+            .json({ message: "Failed to upload Transcript of Records", error });
+    }
+});
 // PATCH /api/applications/me
 // Student can modify its own application
-router.patch("/me", auth_1.authenticate, (0, auth_1.authorize)(userRole_1.UserRole.STUDENT), async (request, response) => {
+router.patch("/me", auth_1.authenticate, (0, auth_1.authorize)(userRole_1.UserRole.STUDENT), upload.single("document"), async (request, response) => {
     try {
         const application = await applications_1.Applications.findOne({
             student: request.user.userId,
         });
         if (!application) {
-            response.status(404).json({ message: "Application not found" });
-            return;
+            return response.status(404).json({ message: "Application not found" });
         }
-        // Checks if the application is still on "submitted"
-        if (application.status !== applications_1.ApplicationStatus.SUBMITTED) {
-            response.status(400).json({
-                message: "Can only modify application in submitted status",
+        /* Checks if the application is still on "submitted"
+        if (application.status !== ApplicationStatus.SUBMITTED) {
+          response.status(400).json({
+            message: "Can only modify application in submitted status",
+          });
+          return;
+        } */
+        // Allow students to change dates and courses
+        const isInitialSubmission = application.status === applications_1.ApplicationStatus.SUBMITTED;
+        const canProposeChanges = [
+            applications_1.ApplicationStatus.PROFESSOR_APPROVED,
+            applications_1.ApplicationStatus.OFFICE_VERIFIED,
+            applications_1.ApplicationStatus.COMPLETED,
+        ].includes(application.status);
+        if (!isInitialSubmission && !canProposeChanges) {
+            return response.status(400).json({
+                message: "Can only modify the application while it's in submitted or after approval",
             });
-            return;
         }
-        // Update sections
+        // Students can change year, host university or referent professor
         application.academicYear =
             request.body.academicYear || application.academicYear;
         application.hostUniversity =
@@ -99,11 +175,44 @@ router.patch("/me", auth_1.authenticate, (0, auth_1.authorize)(userRole_1.UserRo
         application.duration = request.body.duration || application.duration;
         application.referentProfessor =
             request.body.referentProfessor || application.referentProfessor;
+        //If students modifies host courses and mapping after the first approvation
+        const isCourseChangeRequest = request.body.homeCourses || request.body.hostCourses;
+        if (isCourseChangeRequest && !request.file) {
+            return response.status(400).json({
+                message: "A new Learning Agreement PDF is required when modifying host courses or mapping",
+            });
+        }
+        if (request.file && isCourseChangeRequest) {
+            application.documentPath = request.file.path;
+            application.learningAgreementApproved = false;
+        }
+        // New mobility dates
+        if (request.body.startDate) {
+            application.startDate = new Date(request.body.startDate);
+        }
+        if (request.body.endDate) {
+            application.endDate = new Date(request.body.endDate);
+        }
+        // Possibility to modify courses
         if (request.body.homeCourses) {
-            application.homeCourses = JSON.parse(request.body.homeCourses);
+            //application.homeCourses = JSON.parse(request.body.homeCourses);
+            if (application.status === applications_1.ApplicationStatus.SUBMITTED) {
+                application.homeCourses = JSON.parse(request.body.homeCourses);
+            }
+            else {
+                application.proposedHomeCourses = JSON.parse(request.body.homeCourses);
+                application.courseChangeStatus = applications_1.CourseChangeStatus.PENDING;
+            }
         }
         if (request.body.hostCourses) {
-            application.hostCourses = JSON.parse(request.body.hostCourses);
+            //application.hostCourses = JSON.parse(request.body.hostCourses);
+            if (application.status === applications_1.ApplicationStatus.SUBMITTED) {
+                application.hostCourses = JSON.parse(request.body.hostCourses);
+            }
+            else {
+                application.proposedHostCourses = JSON.parse(request.body.hostCourses);
+                application.courseChangeStatus = applications_1.CourseChangeStatus.PENDING;
+            }
         }
         await application.save();
         response.json(application);

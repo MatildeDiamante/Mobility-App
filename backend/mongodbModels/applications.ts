@@ -10,6 +10,7 @@ export enum ApplicationStatus {
   COMPLETED = "completed",
 }
 
+// Definition of the modified courses
 export enum CourseChangeStatus {
   NONE = "none",
   PENDING = "pending",
@@ -39,6 +40,15 @@ export function canBeMarkedCompleted(application: {
     application.hostCourses.length === 3 &&
     application.learningAgreementApproved === true,
   );
+}
+
+// Definition of the taken exams
+export interface PassedExam {
+  course: Types.ObjectId;
+  grade: string;
+  examDate: Date;
+  status: "pending" | "approved" | "rejected";
+  comment?: string;
 }
 
 // Definition of the Model
@@ -73,6 +83,7 @@ export interface ApplicationDocument {
   officeComment?: string;
   officeVerificationDate?: Date;
 
+  passedHostCourses?: PassedExam[];
   transcriptDocumentPath?: string;
   transcriptUploadedAt?: Date;
   transcriptApproved?: boolean;
@@ -154,6 +165,19 @@ const applicationSchema = new Schema<ApplicationDocument>(
     officeComment: String,
     officeVerificationDate: Date,
 
+    passedHostCourses: [
+      {
+        course: { type: Schema.Types.ObjectId, ref: "Courses" },
+        grade: String,
+        examDate: Date,
+        status: {
+          type: String,
+          enum: ["pending", "approved", "rejected"],
+          default: "pending",
+        },
+        comment: String,
+      },
+    ],
     transcriptDocumentPath: String,
     transcriptUploadedAt: Date,
     transcriptApproved: {

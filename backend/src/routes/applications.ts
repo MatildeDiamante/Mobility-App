@@ -95,7 +95,48 @@ router.get(
   },
 );
 
-// post /api/applications/me/transcript
+// POST /api/applications/me/exams
+// Students can update exams scores
+router.post(
+  "/me/exams",
+  authenticate,
+  authorize(UserRole.STUDENT),
+  async (request: AuthenticatedRequest, response) => {
+    try {
+      // Checks if student's application exist
+      const application = await Applications.findOne({
+        student: request.user!.userId,
+      });
+
+      if (!application) {
+        return response.status(404).json({message: "Application not found"});
+      }
+
+      const {passedHostCourses} = request.body;
+
+      // Verifies that the taken exams are in an array format
+      if (!Array.isArray(passedHostCourses)) {
+        return response.status(400).json({message: "passedHostCourses must be an array",});
+      }
+
+      // Transform each exam in an object
+      application.passedHostCourses = passedHostCourses.map((exam: any) =>({
+        course: exam.course,
+        grade: exam.grade,
+        examDate: new Date(exam.examDate),
+        status: "pending",
+      }));
+
+      await application.save();
+
+      response.json({message: "Passed exams submitted for review", application,});
+    } catch (error) {
+      response.status(400).json({message: "Failed to save passed esams", error,});
+    }
+  },
+);
+
+// POST /api/applications/me/transcript
 // Students can upload the Transcrip of Records in PDF
 router.post(
   "/me/transcript",

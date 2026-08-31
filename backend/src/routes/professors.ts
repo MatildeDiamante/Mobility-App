@@ -37,7 +37,7 @@ router.get(
   },
 );
 
-// GET /api7professor/appliccations
+// GET /api/professor/appliccations
 // the referent professor reviews the transcript of records
 // uploaded by the student
 router.patch(
@@ -62,11 +62,9 @@ router.patch(
 
       // Checks if the transcription was uploaded
       if (!application.transcriptDocumentPath) {
-        return response
-          .status(400)
-          .json({
-            message: "The student has not uploaded a Transcript of Records yet",
-          });
+        return response.status(400).json({
+          message: "The student has not uploaded a Transcript of Records yet",
+        });
       }
 
       // Professor's decision and esplanation
@@ -97,6 +95,71 @@ router.patch(
       response
         .status(400)
         .json({ message: "Failed to review Transcript of Records", error });
+    }
+  },
+);
+
+// PATCH /api/professor/applications/:id/exams
+// Professor reviews exams taken and scores
+router.patch(
+  "/applications/:id/exams/review",
+  authenticate,
+  authorize(UserRole.PROFESSOR),
+  async (request: AuthenticatedRequest, response) => {
+    try {
+      const { approvedExams, comment } = request.body;
+
+      // Checks if application exists
+      const application = await Applications.findById(request.params.id);
+
+      if (!application) {
+        return response.status(404).json({ message: "Application not found" });
+      }
+
+      // Checks whether professor is a referent
+      if (application.referentProfessor.toString() !== request.user!.userId) {
+        return response.status(403).json({ message: "Forbidden" });
+      }
+
+      if (!application.passedHostCourses) {
+        return response
+          .status(400)
+          .json({ message: "No passed exams to review" });
+      }
+
+      // Professor can approve or reject taken exams and scores
+      application.passedHostCourses = application.passedHostCourses.map(
+        (exam) => {
+          const isApproved = approvedExams?.includes(exam.course.toString());
+
+          return {
+            ...exam,
+            status: isApproved ? "approved" : "rejected",
+            comment: isApproved
+              ? comment || "Exam approved by referent professor"
+              : comment || "Exam rejected by referent professor",
+          };
+        },
+      );
+
+      application.transcriptApproved =
+        application.passedHostCourses.every(
+          (exam) => exam.status === "approved",
+        ) || application.passedHostCourses.length === 0;
+
+      application.transcriptReviewDate = new Date();
+      application.transcriptComment = comment || "";
+
+      await application.save();
+
+      response.json({
+        message: "Passed exams reviewed successfully",
+        application,
+      });
+    } catch (error) {
+      response
+        .status(400)
+        .json({ message: "Failed to review passed exams", error });
     }
   },
 );

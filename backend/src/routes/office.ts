@@ -11,6 +11,7 @@ import {
   authorize,
 } from "../middleware/auth";
 import { UserRole } from "../../mongodbModels/userRole";
+import { app } from "../app";
 
 const router = Router();
 
@@ -68,7 +69,21 @@ router.patch(
         return;
       }
 
-      const isComplete = canBeMarkedCompleted({
+      // Final ckecks before closing the application
+      const hasLearningAgreementApproved =
+        application.learningAgreementApproved === true;
+
+      const hasTranscriptApproved = application.transcriptApproved === true;
+
+      const hasApprovedExams =
+        Array.isArray(application.passedHostCourses) &&
+        application.passedHostCourses.length > 0 &&
+        application.passedHostCourses.every(
+          (exam) => exam.status === "approved",
+        );
+
+      const isComplete =
+        /*canBeMarkedCompleted({
         academicYear: application.academicYear,
         hostUniversity: application.hostUniversity,
         duration: application.duration,
@@ -77,26 +92,40 @@ router.patch(
         hostCourses: application.hostCourses,
         documentPath: application.documentPath,
         learningAgreementApproved: true,
-      });
+      }); */
+        hasLearningAgreementApproved &&
+        hasTranscriptApproved &&
+        hasApprovedExams &&
+        Boolean(application.academicYear) &&
+        Boolean(application.hostUniversity) &&
+        Boolean(application.duration) &&
+        Boolean(application.referentProfessor) &&
+        Array.isArray(application.homeCourses) &&
+        application.homeCourses.length === 3 &&
+        Array.isArray(application.hostCourses) &&
+        application.hostCourses.length === 3;
 
       if (!isComplete) {
         response.status(400).json({
           message:
-            "Application cannot be marked as completed: missing required fields or learning agreement is not approved",
+            "Application cannot be marked as completed: missing required fields, learning agreement not approved, transcript not approved, or exams not accepted",
         });
         return;
       }
 
       // Update the application status and add office comment and verification date
       application.status = ApplicationStatus.COMPLETED;
-      application.learningAgreementApproved = true;
-
-      if (comment) {
-        application.officeComment = comment;
-      }
-
-      // Automatically set the office's verification date
+      application.officeComment =
+        comment || "Application verififed and closed by office staff";
+      //application.learningAgreementApproved = true;
       application.officeVerificationDate = new Date();
+
+      /*if (comment) {
+        application.officeComment = comment;
+      } */
+
+      /* Automatically set the office's verification date
+      application.officeVerificationDate = new Date(); */
 
       await application.save();
 

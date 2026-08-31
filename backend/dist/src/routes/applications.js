@@ -45,6 +45,7 @@ router.post("/", auth_1.authenticate, (0, auth_1.authorize)(userRole_1.UserRole.
             homeCourses: JSON.parse(request.body.homeCourses),
             hostCourses: JSON.parse(request.body.hostCourses),
             documentPath: request.file.path,
+            status: applications_1.ApplicationStatus.CREATED,
         });
         response.status(201).json(application);
     }
@@ -87,7 +88,9 @@ router.post("/me/exams", auth_1.authenticate, (0, auth_1.authorize)(userRole_1.U
         const { passedHostCourses } = request.body;
         // Verifies that the taken exams are in an array format
         if (!Array.isArray(passedHostCourses)) {
-            return response.status(400).json({ message: "passedHostCourses must be an array", });
+            return response
+                .status(400)
+                .json({ message: "passedHostCourses must be an array" });
         }
         // Transform each exam in an object
         application.passedHostCourses = passedHostCourses.map((exam) => ({
@@ -97,10 +100,15 @@ router.post("/me/exams", auth_1.authenticate, (0, auth_1.authorize)(userRole_1.U
             status: "pending",
         }));
         await application.save();
-        response.json({ message: "Passed exams submitted for review", application, });
+        response.json({
+            message: "Passed exams submitted for review",
+            application,
+        });
     }
     catch (error) {
-        response.status(400).json({ message: "Failed to save passed esams", error, });
+        response
+            .status(400)
+            .json({ message: "Failed to save passed esams", error });
     }
 });
 // POST /api/applications/me/transcript
@@ -160,7 +168,6 @@ router.patch("/me", auth_1.authenticate, (0, auth_1.authorize)(userRole_1.UserRo
         const canProposeChanges = [
             applications_1.ApplicationStatus.PROFESSOR_APPROVED,
             applications_1.ApplicationStatus.OFFICE_VERIFIED,
-            applications_1.ApplicationStatus.COMPLETED,
         ].includes(application.status);
         if (!isInitialSubmission && !canProposeChanges) {
             return response.status(400).json({
@@ -192,6 +199,12 @@ router.patch("/me", auth_1.authenticate, (0, auth_1.authorize)(userRole_1.UserRo
         }
         if (request.body.endDate) {
             application.endDate = new Date(request.body.endDate);
+        }
+        if (application.startDate &&
+            new Date() >= new Date(application.startDate) &&
+            application.status !== applications_1.ApplicationStatus.CLOSED &&
+            application.status !== applications_1.ApplicationStatus.CANCELED) {
+            application.status = applications_1.ApplicationStatus.MOBILITY_IN_PROGRESS;
         }
         // Possibility to modify courses
         if (request.body.homeCourses) {

@@ -37,14 +37,19 @@ exports.Applications = exports.CourseChangeStatus = exports.ApplicationStatus = 
 exports.canBeMarkedCompleted = canBeMarkedCompleted;
 // Information about the application
 const mongoose_1 = __importStar(require("mongoose"));
-//Definition of the status of the application
+// Definition of the general application lifecycle
 var ApplicationStatus;
 (function (ApplicationStatus) {
+    ApplicationStatus["CREATED"] = "created";
     ApplicationStatus["SUBMITTED"] = "submitted";
+    ApplicationStatus["AWAITING_LEARNING_AGREEMENT_APPROVAL"] = "awaiting_learning_agreement_approval";
+    ApplicationStatus["PRE_DEPARTURE_COMPLETED"] = "pre_departure_completed";
+    ApplicationStatus["MOBILITY_IN_PROGRESS"] = "mobility_in_progress";
+    ApplicationStatus["WAITING_FOR_EXAM_SCORE_APPROVAL"] = "waiting_for_exam_score_approval";
     ApplicationStatus["PROFESSOR_APPROVED"] = "professor_approved";
-    ApplicationStatus["PROFESSOR_REJECTED"] = "professor_rejected";
     ApplicationStatus["OFFICE_VERIFIED"] = "office_verified";
-    ApplicationStatus["COMPLETED"] = "completed";
+    ApplicationStatus["CLOSED"] = "closed";
+    ApplicationStatus["CANCELED"] = "canceled";
 })(ApplicationStatus || (exports.ApplicationStatus = ApplicationStatus = {}));
 // Definition of the modified courses
 var CourseChangeStatus;

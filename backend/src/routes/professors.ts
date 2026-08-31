@@ -37,7 +37,7 @@ router.get(
   },
 );
 
-// GET /api/professor/appliccations
+// GET /api/professor/applications
 // the referent professor reviews the transcript of records
 // uploaded by the student
 router.patch(
@@ -150,6 +150,8 @@ router.patch(
       application.transcriptReviewDate = new Date();
       application.transcriptComment = comment || "";
 
+      application.status = ApplicationStatus.WAITING_FOR_EXAM_SCORE_APPROVAL;
+
       await application.save();
 
       response.json({
@@ -203,20 +205,21 @@ router.patch(
         return;
       }
 
-      // Check if the initial application is still in "submitted" status
+      // Check if the application is still in the initial created status
       if (["approve", "reject"].includes(decision)) {
-        if (application.status !== ApplicationStatus.SUBMITTED) {
+        if (application.status !== ApplicationStatus.CREATED) {
           response.status(400).json({
-            message: "Can only decide on applications in submitted status",
+            message: "Can only decide on applications in created status",
           });
           return;
         }
 
         // Update the application status and add professor's comment and decision date
         if (decision === "approve") {
-          application.status = ApplicationStatus.PROFESSOR_APPROVED;
+          application.status =
+            ApplicationStatus.AWAITING_LEARNING_AGREEMENT_APPROVAL;
         } else {
-          application.status = ApplicationStatus.PROFESSOR_REJECTED;
+          application.status = ApplicationStatus.CANCELED;
         }
 
         if (comment) {

@@ -35,23 +35,32 @@ router.patch("/applications/:id/verify", auth_1.authenticate, (0, auth_1.authori
             response.status(404).json({ message: "Application not found" });
             return;
         }
-        // Check if the application is in "professor_approved" status
-        if (application.status !== applications_1.ApplicationStatus.PROFESSOR_APPROVED) {
+        // The application must already be in the final review phase before office closure
+        if (application.status !== applications_1.ApplicationStatus.WAITING_FOR_EXAM_SCORE_APPROVAL &&
+            application.status !== applications_1.ApplicationStatus.MOBILITY_IN_PROGRESS) {
             response.status(400).json({
-                message: "Can only verify applications approved by the professor",
+                message: "Can only verify applications after the mobility and exam review phase",
             });
             return;
         }
-        // Final checks before closing the application:
-        // 1. Learning Agreement must have been approved.
-        // 2. Transcript of Records must have been approved by the referent professor.
-        // 3. All passed exams must be accepted by the professor.
+        // Final checks before closing the application
         const hasLearningAgreementApproved = application.learningAgreementApproved === true;
         const hasTranscriptApproved = application.transcriptApproved === true;
         const hasApprovedExams = Array.isArray(application.passedHostCourses) &&
             application.passedHostCourses.length > 0 &&
             application.passedHostCourses.every((exam) => exam.status === "approved");
-        const isComplete = hasLearningAgreementApproved &&
+        const isComplete = 
+        /*canBeMarkedCompleted({
+        academicYear: application.academicYear,
+        hostUniversity: application.hostUniversity,
+        duration: application.duration,
+        referentProfessor: application.referentProfessor,
+        homeCourses: application.homeCourses,
+        hostCourses: application.hostCourses,
+        documentPath: application.documentPath,
+        learningAgreementApproved: true,
+      }); */
+        hasLearningAgreementApproved &&
             hasTranscriptApproved &&
             hasApprovedExams &&
             Boolean(application.academicYear) &&
@@ -69,9 +78,9 @@ router.patch("/applications/:id/verify", auth_1.authenticate, (0, auth_1.authori
             return;
         }
         // Update the application status and add office comment and verification date
-        application.status = applications_1.ApplicationStatus.COMPLETED;
+        application.status = applications_1.ApplicationStatus.CLOSED;
         application.officeComment =
-            comment || "Application verififed and closed by office staff";
+            comment || "Application verified and closed by office staff";
         //application.learningAgreementApproved = true;
         application.officeVerificationDate = new Date();
         /*if (comment) {

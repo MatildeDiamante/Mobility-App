@@ -61,10 +61,14 @@ router.patch(
         return;
       }
 
-      // Check if the application is in "professor_approved" status
-      if (application.status !== ApplicationStatus.PROFESSOR_APPROVED) {
+      // The application must already be in the final review phase before office closure
+      if (
+        application.status !== ApplicationStatus.WAITING_FOR_EXAM_SCORE_APPROVAL &&
+        application.status !== ApplicationStatus.MOBILITY_IN_PROGRESS
+      ) {
         response.status(400).json({
-          message: "Can only verify applications approved by the professor",
+          message:
+            "Can only verify applications after the mobility and exam review phase",
         });
         return;
       }
@@ -114,9 +118,9 @@ router.patch(
       }
 
       // Update the application status and add office comment and verification date
-      application.status = ApplicationStatus.COMPLETED;
+      application.status = ApplicationStatus.CLOSED;
       application.officeComment =
-        comment || "Application verififed and closed by office staff";
+        comment || "Application verified and closed by office staff";
       //application.learningAgreementApproved = true;
       application.officeVerificationDate = new Date();
 

@@ -58,6 +58,7 @@ router.post(
         homeCourses: JSON.parse(request.body.homeCourses),
         hostCourses: JSON.parse(request.body.hostCourses),
         documentPath: request.file.path,
+        status: ApplicationStatus.CREATED,
       });
 
       response.status(201).json(application);
@@ -109,18 +110,20 @@ router.post(
       });
 
       if (!application) {
-        return response.status(404).json({message: "Application not found"});
+        return response.status(404).json({ message: "Application not found" });
       }
 
-      const {passedHostCourses} = request.body;
+      const { passedHostCourses } = request.body;
 
       // Verifies that the taken exams are in an array format
       if (!Array.isArray(passedHostCourses)) {
-        return response.status(400).json({message: "passedHostCourses must be an array",});
+        return response
+          .status(400)
+          .json({ message: "passedHostCourses must be an array" });
       }
 
       // Transform each exam in an object
-      application.passedHostCourses = passedHostCourses.map((exam: any) =>({
+      application.passedHostCourses = passedHostCourses.map((exam: any) => ({
         course: exam.course,
         grade: exam.grade,
         examDate: new Date(exam.examDate),
@@ -129,9 +132,14 @@ router.post(
 
       await application.save();
 
-      response.json({message: "Passed exams submitted for review", application,});
+      response.json({
+        message: "Passed exams submitted for review",
+        application,
+      });
     } catch (error) {
-      response.status(400).json({message: "Failed to save passed esams", error,});
+      response
+        .status(400)
+        .json({ message: "Failed to save passed esams", error });
     }
   },
 );
@@ -213,7 +221,6 @@ router.patch(
       const canProposeChanges = [
         ApplicationStatus.PROFESSOR_APPROVED,
         ApplicationStatus.OFFICE_VERIFIED,
-        ApplicationStatus.COMPLETED,
       ].includes(application.status);
 
       if (!isInitialSubmission && !canProposeChanges) {
@@ -254,6 +261,15 @@ router.patch(
       }
       if (request.body.endDate) {
         application.endDate = new Date(request.body.endDate);
+      }
+
+      if (
+        application.startDate &&
+        new Date() >= new Date(application.startDate) &&
+        application.status !== ApplicationStatus.CLOSED &&
+        application.status !== ApplicationStatus.CANCELED
+      ) {
+        application.status = ApplicationStatus.MOBILITY_IN_PROGRESS;
       }
 
       // Possibility to modify courses

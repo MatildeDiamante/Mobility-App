@@ -1,13 +1,18 @@
 // Information about the application
 import mongoose, { Schema, Types } from "mongoose";
 
-//Definition of the status of the application
+// Definition of the general application lifecycle
 export enum ApplicationStatus {
+  CREATED = "created",
   SUBMITTED = "submitted",
+  AWAITING_LEARNING_AGREEMENT_APPROVAL = "awaiting_learning_agreement_approval",
+  PRE_DEPARTURE_COMPLETED = "pre_departure_completed",
+  MOBILITY_IN_PROGRESS = "mobility_in_progress",
+  WAITING_FOR_EXAM_SCORE_APPROVAL = "waiting_for_exam_score_approval",
   PROFESSOR_APPROVED = "professor_approved",
-  PROFESSOR_REJECTED = "professor_rejected",
   OFFICE_VERIFIED = "office_verified",
-  COMPLETED = "completed",
+  CLOSED = "closed",
+  CANCELED = "canceled",
 }
 
 // Definition of the modified courses

@@ -22,7 +22,7 @@ router.get("/applications", auth_1.authenticate, (0, auth_1.authorize)(userRole_
             .json({ message: "Failed to fetch applications", error });
     }
 });
-// GET /api/professor/appliccations
+// GET /api/professor/applications
 // the referent professor reviews the transcript of records
 // uploaded by the student
 router.patch("/applications/:id/transcript/review", auth_1.authenticate, (0, auth_1.authorize)(userRole_1.UserRole.PROFESSOR), async (request, response) => {
@@ -106,6 +106,7 @@ router.patch("/applications/:id/exams/review", auth_1.authenticate, (0, auth_1.a
             application.passedHostCourses.every((exam) => exam.status === "approved") || application.passedHostCourses.length === 0;
         application.transcriptReviewDate = new Date();
         application.transcriptComment = comment || "";
+        application.status = applications_1.ApplicationStatus.WAITING_FOR_EXAM_SCORE_APPROVAL;
         await application.save();
         response.json({
             message: "Passed exams reviewed successfully",
@@ -146,20 +147,21 @@ router.patch("/applications/:id/decision", auth_1.authenticate, (0, auth_1.autho
             response.status(403).json({ message: "Forbidden" });
             return;
         }
-        // Check if the initial application is still in "submitted" status
+        // Check if the application is still in the initial created status
         if (["approve", "reject"].includes(decision)) {
-            if (application.status !== applications_1.ApplicationStatus.SUBMITTED) {
+            if (application.status !== applications_1.ApplicationStatus.CREATED) {
                 response.status(400).json({
-                    message: "Can only decide on applications in submitted status",
+                    message: "Can only decide on applications in created status",
                 });
                 return;
             }
             // Update the application status and add professor's comment and decision date
             if (decision === "approve") {
-                application.status = applications_1.ApplicationStatus.PROFESSOR_APPROVED;
+                application.status =
+                    applications_1.ApplicationStatus.AWAITING_LEARNING_AGREEMENT_APPROVAL;
             }
             else {
-                application.status = applications_1.ApplicationStatus.PROFESSOR_REJECTED;
+                application.status = applications_1.ApplicationStatus.CANCELED;
             }
             if (comment) {
                 application.professorComment = comment;

@@ -1,4 +1,4 @@
-// Upload PDF and application creation
+// Upload PDFs and application creation
 import { Router } from "express";
 import multer from "multer";
 import {

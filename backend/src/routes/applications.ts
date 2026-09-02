@@ -216,17 +216,17 @@ router.patch(
       } */
 
       // Allow students to change dates and courses
-      const isInitialSubmission =
-        application.status === ApplicationStatus.SUBMITTED;
-      const canProposeChanges = [
+      const canEditApplication = [
+        ApplicationStatus.CREATED,
+        ApplicationStatus.SUBMITTED,
         ApplicationStatus.PROFESSOR_APPROVED,
         ApplicationStatus.OFFICE_VERIFIED,
       ].includes(application.status);
 
-      if (!isInitialSubmission && !canProposeChanges) {
+      if (!canEditApplication) {
         return response.status(400).json({
           message:
-            "Can only modify the application while it's in submitted or after approval",
+            "Can only modify the application while it's created, submitted or approved",
         });
       }
 
@@ -276,7 +276,10 @@ router.patch(
       if (request.body.homeCourses) {
         //application.homeCourses = JSON.parse(request.body.homeCourses);
 
-        if (application.status === ApplicationStatus.SUBMITTED) {
+        if (
+          application.status === ApplicationStatus.CREATED ||
+          application.status === ApplicationStatus.SUBMITTED
+        ) {
           application.homeCourses = JSON.parse(request.body.homeCourses);
         } else {
           application.proposedHomeCourses = JSON.parse(
@@ -288,7 +291,10 @@ router.patch(
 
       if (request.body.hostCourses) {
         //application.hostCourses = JSON.parse(request.body.hostCourses);
-        if (application.status === ApplicationStatus.SUBMITTED) {
+        if (
+          (application.status === ApplicationStatus.CREATED ||
+            application.status) === ApplicationStatus.SUBMITTED
+        ) {
           application.hostCourses = JSON.parse(request.body.hostCourses);
         } else {
           application.proposedHostCourses = JSON.parse(

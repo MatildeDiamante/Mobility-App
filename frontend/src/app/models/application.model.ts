@@ -1,21 +1,25 @@
-// Data types for the frontend application form 
+// Data types for the frontend application form
 export interface CourseMapping {
-  hostCourseCode: string;
-  hostCourseName: string;
-  hostCourseCredits: number;
-  homeCourseCode: string;
-  homeCourseName: string;
-  homeCourseCredits: number;
+  homeCourseId: string;
+  hostCourseId: string;
+}
+
+//Course shown in the selection list
+export interface CourseOption {
+  _id: string;
+  code: string;
+  name: string;
+  credits: number;
 }
 
 // Initial application from the student
 export interface InitialApplication {
-  firstName: string;
-  lastName: string;
   academicYear: string;
   hostUniversity: string;
+  duration: string;
   mobilityStartDate: string;
   mobilityEndDate: string;
   referentProfessor: string;
-  courseMappings: CourseMapping[]; // corresponds to the "courseMappings" field in the form
+  homeCourses: string[];
+  hostCourses: string[];
 }

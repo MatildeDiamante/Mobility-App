@@ -17,7 +17,7 @@ app.use(helmet());
 // Middleware cors
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL ?? "http:localhost:4200",
+    origin: process.env.FRONTEND_URL ?? "http://localhost:4200",
     credentials: true, // with this Angular sends JWT cookies
   }),
 );

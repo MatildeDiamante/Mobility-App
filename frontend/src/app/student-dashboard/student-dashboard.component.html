@@ -1,0 +1,281 @@
+<main class="student-dashboard">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Area studenti</p>
+      <h1>Candidatura Erasmus</h1>
+
+      @if (applicationStatus) {
+        <p class="application-status">
+          Stato candidatura: {{ applicationStatus }}
+        </p>
+      }
+    </div>
+  </header>
+
+  @if (!applicationExists) {
+    <section class="workflow-section" [formGroup]="initialApplicationForm">
+      <div class="section-heading">
+        <h2>Candidatura iniziale</h2>
+        <p>
+          Inserisci i dati della mobilità e seleziona i tre abbinamenti tra i
+          corsi.
+        </p>
+      </div>
+
+      <div class="form-grid">
+        <label>
+          Anno accademico
+          <input
+            type="text"
+            placeholder="2026/2027"
+            formControlName="academicYear"
+          />
+        </label>
+
+        <label>
+          Durata della mobilità
+          <input type="text" placeholder="6 mesi" formControlName="duration" />
+        </label>
+
+        <label>
+          Università ospitante
+          <select formControlName="hostUniversity">
+            <option value="">Seleziona un'università</option>
+
+            @for (university of universities; track university._id) {
+              <option [value]="university._id">
+                {{ university.name }}
+              </option>
+            }
+          </select>
+        </label>
+
+        <label>
+          Professore referente
+          <select formControlName="referentProfessor">
+            <option value="">Seleziona un professore</option>
+
+            @for (professor of professors; track professor._id) {
+              <option [value]="professor._id">
+                {{ professor.fullName }}
+              </option>
+            }
+          </select>
+        </label>
+      </div>
+
+      <div class="mapping-list">
+        <div class="mapping-heading">
+          <h3>Mapping dei corsi</h3>
+          <p>
+            Seleziona tre corsi della home university e tre corsi della host
+            university.
+          </p>
+        </div>
+
+        <div formArrayName="homeCourses">
+          <h4>Corsi della home university</h4>
+
+          @for (courseControl of initialHomeCourses.controls; track $index) {
+            <label>
+              Corso home {{ $index + 1 }}
+
+              <select [formControlName]="$index">
+                <option value="">Seleziona un corso home</option>
+
+                @for (course of homeCourses; track course._id) {
+                  <option [value]="course._id">
+                    {{ course.code }} - {{ course.name }} -
+                    {{ course.credits }} ECTS
+                  </option>
+                }
+              </select>
+            </label>
+          }
+        </div>
+
+        <div formArrayName="hostCourses">
+          <h4>Corsi della host university</h4>
+
+          @for (courseControl of initialHostCourses.controls; track $index) {
+            <label>
+              Corso host {{ $index + 1 }}
+
+              <select [formControlName]="$index">
+                <option value="">Seleziona un corso host</option>
+
+                @for (course of hostCourses; track course._id) {
+                  <option [value]="course._id">
+                    {{ course.code }} - {{ course.name }} -
+                    {{ course.credits }} ECTS
+                  </option>
+                }
+              </select>
+            </label>
+          }
+        </div>
+      </div>
+
+      <label class="upload-field">
+        Learning Agreement in PDF
+
+        <input
+          type="file"
+          accept="application/pdf"
+          (change)="selectLearningAgreement($event)"
+        />
+      </label>
+
+      @if (learningAgreementFile) {
+        <p class="selected-file">
+          File selezionato: {{ learningAgreementFile.name }}
+        </p>
+      }
+
+      <button
+        type="button"
+        class="primary-button"
+        (click)="submitInitialApplication()"
+      >
+        Invia candidatura
+      </button>
+    </section>
+  }
+
+  @if (applicationExists) {
+    <section class="workflow-section" [formGroup]="mobilityPeriodForm">
+      <div class="section-heading">
+        <h2>Modifica periodo di mobilità</h2>
+        <p>Inserisci le nuove date di inizio e fine del soggiorno.</p>
+      </div>
+
+      <div class="form-grid">
+        <label>
+          Data di inizio
+          <input type="date" formControlName="startDate" />
+        </label>
+
+        <label>
+          Data di fine
+          <input type="date" formControlName="endDate" />
+        </label>
+      </div>
+
+      <button
+        type="button"
+        class="secondary-button"
+        (click)="updateMobilityPeriod()"
+      >
+        Aggiorna periodo
+      </button>
+    </section>
+
+    <section class="workflow-section" [formGroup]="mappingProposalForm">
+      <div class="section-heading">
+        <h2>Proponi un nuovo mapping</h2>
+        <p>Seleziona i nuovi corsi e allega un nuovo Learning Agreement.</p>
+      </div>
+
+      <div formArrayName="homeCourses">
+        <h3>Nuovi corsi home</h3>
+
+        @for (courseControl of proposedHomeCourses.controls; track $index) {
+          <label>
+            Corso home {{ $index + 1 }}
+
+            <select [formControlName]="$index">
+              <option value="">Seleziona un corso home</option>
+
+              @for (course of homeCourses; track course._id) {
+                <option [value]="course._id">
+                  {{ course.code }} - {{ course.name }} -
+                  {{ course.credits }} ECTS
+                </option>
+              }
+            </select>
+          </label>
+        }
+      </div>
+
+      <div formArrayName="hostCourses">
+        <h3>Nuovi corsi host</h3>
+
+        @for (courseControl of proposedHostCourses.controls; track $index) {
+          <label>
+            Corso host {{ $index + 1 }}
+
+            <select [formControlName]="$index">
+              <option value="">Seleziona un corso host</option>
+
+              @for (course of hostCourses; track course._id) {
+                <option [value]="course._id">
+                  {{ course.code }} - {{ course.name }} -
+                  {{ course.credits }} ECTS
+                </option>
+              }
+            </select>
+          </label>
+        }
+      </div>
+
+      <label class="upload-field">
+        Nuovo Learning Agreement in PDF
+
+        <input
+          type="file"
+          accept="application/pdf"
+          (change)="selectNewLearningAgreement($event)"
+        />
+      </label>
+
+      @if (newLearningAgreementFile) {
+        <p class="selected-file">
+          File selezionato:
+          {{ newLearningAgreementFile.name }}
+        </p>
+      }
+
+      <button
+        type="button"
+        class="secondary-button"
+        (click)="submitNewMapping()"
+      >
+        Invia proposta di mapping
+      </button>
+    </section>
+
+    @if (applicationExists && applicationStatus === "mobility_in_progress") {
+      <section class="workflow-section">
+        <div class="section-heading">
+          <h2>Conclusione della mobilità</h2>
+          <p>Carica il Transcript of Records in formato PDF.</p>
+        </div>
+
+        <label class="upload-field">
+          Transcript of Records
+
+          <input
+            type="file"
+            accept="application/pdf"
+            (change)="selectTranscript($event)"
+          />
+        </label>
+
+        @if (transcriptFile) {
+          <p class="selected-file">
+            File selezionato: {{ transcriptFile.name }}
+          </p>
+        }
+
+        <button
+          type="button"
+          class="primary-button"
+          [disabled]="!transcriptFile"
+          (click)="uploadTranscript()"
+        >
+          Carica Transcript of Records
+        </button>
+      </section>
+    }
+  }
+</main>

@@ -134,7 +134,7 @@ export class StudentDashboardComponent implements OnInit {
         this.universities = universities as UniversityOption[];
       },
       error: (error) => {
-        console.error('Errore nel caricamento delle università', error);
+        console.error('Error during the loading of universities', error);
       },
     });
 
@@ -144,7 +144,7 @@ export class StudentDashboardComponent implements OnInit {
         this.professors = professors as ProfessorOption[];
       },
       error: (error) => {
-        console.error('Errore nel caricamento dei professori', error);
+        console.error('Error during the loading of professors', error);
       },
     });
 
@@ -154,7 +154,7 @@ export class StudentDashboardComponent implements OnInit {
         this.homeCourses = courses;
       },
       error: (error) => {
-        console.error('Errore nel caricamento dei corsi home', error);
+        console.error('Error during the loading of home courses', error);
       },
     });
 
@@ -164,7 +164,7 @@ export class StudentDashboardComponent implements OnInit {
         this.hostCourses = courses;
       },
       error: (error) => {
-        console.error('Errore nel caricamento dei corsi host', error);
+        console.error('Error during the loading of host courses', error);
       },
     });
   }
@@ -184,13 +184,172 @@ export class StudentDashboardComponent implements OnInit {
       },
       error: (error) => {
         if (error.status !== 404) {
-          console.error('Errore nel caricamento della candidatura', error);
+          console.error('Error during the loading of the application', error);
         }
       },
     });
   }
 
-  // private method to convert a date
+  // Methods to select the files
+  selectLearningAgreement(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+
+    this.learningAgreementFile = this.getPdfFile(file, input);
+  }
+
+  selectNewLearningAgreement(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+
+    this.newLearningAgreementFile = this.getPdfFile(file, input);
+  }
+
+  selectTranscript(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+
+    this.transcriptFile = this.getPdfFile(file, input);
+  }
+
+  // Method to submit the forms
+  submitInitialApplication(): void {
+    if (this.initialApplicationForm.invalid || !this.learningAgreementFile) {
+      this.initialApplicationForm.markAllAsTouched();
+      return;
+    }
+
+    const formValue = this.initialApplicationForm.getRawValue();
+    const application: InitialApplication = {
+      academicYear: formValue.academicYear ?? '',
+      hostUniversity: formValue.hostUniversity ?? '',
+      duration: formValue.duration ?? '',
+      referentProfessor: formValue.referentProfessor ?? '',
+      homeCourses: this.getCourseIds(
+        this.initialApplicationForm.controls.homeCourses,
+      ),
+      hostCourses: this.getCourseIds(
+        this.initialApplicationForm.controls.hostCourses,
+      ),
+      mobilityStartDate: '',
+      mobilityEndDate: '',
+    };
+
+    this.applicationsService
+      .createInitialApplication(application, this.learningAgreementFile)
+      .subscribe({
+        next: (createdApplication: any) => {
+          this.applicationExists = true;
+          this.applicationStatus = createdApplication.status ?? 'created';
+        },
+        error: (error) => {
+          console.error(
+            'Error during the submission of the application',
+            error,
+          );
+        },
+      });
+  }
+
+  // Method to update the mobility period
+  updateMobilityPeriod(): void {
+    if (this.mobilityPeriodForm.invalid) {
+      this.mobilityPeriodForm.markAllAsTouched();
+      return;
+    }
+
+    const { startDate, endDate } = this.mobilityPeriodForm.getRawValue();
+
+    this.applicationsService
+      .updateMobilityPeriod(startDate ?? '', endDate ?? '')
+      .subscribe({
+        next: (application: any) => {
+          this.applicationExists = true;
+          this.applicationStatus = application.status ?? this.applicationStatus;
+        },
+        error: (error) => {
+          console.error(
+            'There was an error during the update of the mobility period',
+            error,
+          );
+        },
+      });
+  }
+
+  // Method to submit the new mapping proposal
+  submitNewMapping(): void {
+    if (this.mappingProposalForm.invalid || !this.newLearningAgreementFile) {
+      this.mappingProposalForm.markAllAsTouched();
+      return;
+    }
+
+    const homeCourses = this.getCourseIds(
+      this.mappingProposalForm.controls.homeCourses,
+    );
+    const hostCourses = this.getCourseIds(
+      this.mappingProposalForm.controls.hostCourses,
+    );
+
+    this.applicationsService
+      .proposeNewMapping(
+        homeCourses,
+        hostCourses,
+        this.newLearningAgreementFile,
+      )
+      .subscribe({
+        next: (application: any) => {
+          this.applicationExists = true;
+          this.applicationStatus = application.status ?? this.applicationStatus;
+        },
+        error: (error) => {
+          console.error(
+            'Error during the submission of the new mapping',
+            error,
+          );
+        },
+      });
+  }
+
+  // Method to upload the transcript
+  uploadTranscript(): void {
+    if (!this.transcriptFile) {
+      return;
+    }
+
+    this.applicationsService.uploadTranscript(this.transcriptFile).subscribe({
+      next: (application: any) => {
+        this.applicationExists = true;
+        this.applicationStatus = application.status ?? this.applicationStatus;
+      },
+      error: (error) => {
+        console.error('Error during the upload of the Transcript', error);
+      },
+    });
+  }
+
+  // Private method to get the course IDs from the form array
+  private getCourseIds(courseControls: FormArray): string[] {
+    return courseControls.controls
+      .map((control) => control.value)
+      .filter((courseId): courseId is string => Boolean(courseId));
+  }
+
+  // Private method to validate the selected file
+  private getPdfFile(file: File | null, input: HTMLInputElement): File | null {
+    if (!file) {
+      return null;
+    }
+
+    if (file.type !== 'application/pdf') {
+      input.value = '';
+      console.error('Only PDF files can be selected');
+      return null;
+    }
+
+    return file;
+  }
+
+  // Private method to convert a date
   private toDateInputValue(date: string | Date | undefined): string {
     if (!date) {
       return '';

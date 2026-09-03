@@ -11,6 +11,7 @@ export class ApplicationsService {
 
   private readonly http = inject(HttpClient);
 
+  // Methods
   createInitialApplication(
     application: InitialApplication,
     learningAgreement: File,
@@ -22,11 +23,12 @@ export class ApplicationsService {
     formData.append('duration', application.duration);
     formData.append('referentProfessor', application.referentProfessor);
 
-    formData.append('homeCourses', JSON.stringify(application.homeCourses));
+    formData.append('homeCourses', JSON.stringify(application.homeCourses)); // array conversion
     formData.append('hostCourses', JSON.stringify(application.hostCourses));
 
     formData.append('document', learningAgreement);
 
+    // Application creation request
     return this.http.post(this.apiUrl, formData, {
       withCredentials: true,
     });
@@ -38,6 +40,7 @@ export class ApplicationsService {
     formData.append('startDate', mobilityStartDate);
     formData.append('endDate', mobilityEndDate);
 
+    // HTTP request
     return this.http.patch(`${this.apiUrl}/me`, formData, {
       withCredentials: true,
     });

@@ -1,7 +1,9 @@
+// This file contains the ListsService class, which is responsible for fetching various lists of data from the backend API
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { CourseOption } from '../models/application.model';
 
+// Declaration of the service
 @Injectable({
   providedIn: 'root',
 })
@@ -10,6 +12,7 @@ export class ListsService {
 
   private readonly apiUrl = 'http://localhost:3000/api/lists';
 
+  // Methods
   getUniversities() {
     return this.http.get(`${this.apiUrl}/universities`, {
       withCredentials: true,

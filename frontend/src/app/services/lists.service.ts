@@ -10,7 +10,7 @@ import { CourseOption } from '../models/application.model';
 export class ListsService {
   private readonly http = inject(HttpClient);
 
-  private readonly apiUrl = 'http://localhost:3000/api/lists';
+  private readonly apiUrl = 'http://localhost:8080/api/lists';
 
   // Methods
   getUniversities() {

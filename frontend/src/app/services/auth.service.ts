@@ -16,7 +16,7 @@ export class AuthService {
     // dependencies HTTP
   private readonly http = inject(HttpClient);
 
-  private readonly apiUrl = 'http://localhost:3000/api/auth';
+  private readonly apiUrl = 'http://localhost:8080/api/auth';
 
   private readonly userSubject = new BehaviorSubject<AuthUser | null>(null); // user status
 

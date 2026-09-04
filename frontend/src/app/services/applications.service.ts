@@ -34,19 +34,36 @@ export class ApplicationsService {
     });
   }
 
-  updateMobilityPeriod(mobilityStartDate: string, mobilityEndDate: string) {
+  getMyApplications() {
+    return this.http.get(`${this.apiUrl}/me`, {
+      withCredentials: true,
+    });
+  }
+
+  getApplication(applicationId: string) {
+    return this.http.get(`${this.apiUrl}/${applicationId}`, {
+      withCredentials: true,
+    });
+  }
+
+  updateMobilityPeriod(
+    applicationId: string,
+    startDate: string,
+    endDate: string,
+  ) {
     const formData = new FormData();
 
-    formData.append('startDate', mobilityStartDate);
-    formData.append('endDate', mobilityEndDate);
+    formData.append('startDate', startDate);
+    formData.append('endDate', endDate);
 
     // HTTP request
-    return this.http.patch(`${this.apiUrl}/me`, formData, {
+    return this.http.patch(`${this.apiUrl}/${applicationId}`, formData, {
       withCredentials: true,
     });
   }
 
   proposeNewMapping(
+    applicationId: string,
     homeCourses: string[],
     hostCourses: string[],
     learningAgreement: File,
@@ -57,24 +74,47 @@ export class ApplicationsService {
     formData.append('hostCourses', JSON.stringify(hostCourses));
     formData.append('document', learningAgreement);
 
-    return this.http.patch(`${this.apiUrl}/me`, formData, {
+    return this.http.patch(`${this.apiUrl}/${applicationId}`, formData, {
       withCredentials: true,
     });
   }
 
-  uploadTranscript(transcript: File) {
+  completeMobility(applicationId: string) {
+    return this.http.patch(
+      `${this.apiUrl}/${applicationId}/complete-mobility`,
+      {},
+      {
+        withCredentials: true,
+      },
+    );
+  }
+
+  uploadTranscript(applicationId: string, transcript: File) {
     const formData = new FormData();
 
     formData.append('transcript', transcript);
 
-    return this.http.post(`${this.apiUrl}/me/transcript`, formData, {
-      withCredentials: true,
-    });
+    return this.http.post(
+      `${this.apiUrl}/${applicationId}/transcript`,
+      formData,
+      {
+        withCredentials: true,
+      },
+    );
   }
 
-  getMyApplication() {
-    return this.http.get(`${this.apiUrl}/me`, {
-      withCredentials: true,
-    });
+  submitPassedExams(
+    applicationId: string,
+    passedHostCourses: {
+      course: string;
+      grade: string;
+      examDate: string;
+    }[],
+  ) {
+    return this.http.post(
+      `${this.apiUrl}/${applicationId}/exams`,
+      { passedHostCourses },
+      { withCredentials: true },
+    );
   }
 }

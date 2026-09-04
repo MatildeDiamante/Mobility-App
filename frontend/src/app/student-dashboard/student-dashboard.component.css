@@ -23,6 +23,21 @@ h4 {
   color: #1f2937;
 }
 
+.application-selector {
+  max-width: 420px;
+  margin-bottom: 24px;
+}
+
+.application-selector select {
+  min-height: 42px;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid #9ca3af;
+  border-radius: 4px;
+  background: #ffffff;
+  font: inherit;
+}
+
 .workflow-section {
   margin-top: 24px;
   padding: 24px;

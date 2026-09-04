@@ -49,6 +49,10 @@ export class StudentDashboardComponent implements OnInit {
   applicationExists = false;
   applicationStatus: string | null = null;
 
+  // Application list and the selected application ID
+  applications: any[] = [];
+  selectedApplicationId: string | null = null;
+
   // Form of the initial application
   readonly initialApplicationForm = this.formBuilder.group({
     academicYear: ['', Validators.required],
@@ -171,21 +175,38 @@ export class StudentDashboardComponent implements OnInit {
 
   // Private method to load the student's application, if it exists
   private loadMyApplication(): void {
-    this.applicationsService.getMyApplication().subscribe({
-      next: (application: any) => {
+    this.applicationsService.getMyApplications().subscribe({
+      next: (applications: any) => {
+        this.applications = applications;
+
+        if (applications.length === 0) {
+          this.applicationExists = false;
+          return;
+        }
+
         this.applicationExists = true;
+        this.selectApplication(applications[0]._id);
+      },
+      error: (error) => {
+        console.error('Error during the loading of the application', error);
+      },
+    });
+  }
+
+  // Method to select an application and load its details
+  selectApplication(applicationId: string): void {
+    this.applicationsService.getApplication(applicationId).subscribe({
+      next: (application: any) => {
+        this.selectedApplicationId = application._id;
         this.applicationStatus = application.status;
 
-        // updates some values of the form without creating a new one
         this.mobilityPeriodForm.patchValue({
           startDate: this.toDateInputValue(application.startDate),
           endDate: this.toDateInputValue(application.endDate),
         });
       },
       error: (error) => {
-        if (error.status !== 404) {
-          console.error('Error during the loading of the application', error);
-        }
+        console.error('Error during the loading of the application', error);
       },
     });
   }
@@ -240,7 +261,10 @@ export class StudentDashboardComponent implements OnInit {
       .subscribe({
         next: (createdApplication: any) => {
           this.applicationExists = true;
+          this.selectedApplicationId = createdApplication._id;
           this.applicationStatus = createdApplication.status ?? 'created';
+
+          this.applications = [createdApplication, ...this.applications]; // the new application is the selected one
         },
         error: (error) => {
           console.error(
@@ -253,7 +277,7 @@ export class StudentDashboardComponent implements OnInit {
 
   // Method to update the mobility period
   updateMobilityPeriod(): void {
-    if (this.mobilityPeriodForm.invalid) {
+    if (!this.selectedApplicationId || this.mobilityPeriodForm.invalid) {
       this.mobilityPeriodForm.markAllAsTouched();
       return;
     }
@@ -261,10 +285,13 @@ export class StudentDashboardComponent implements OnInit {
     const { startDate, endDate } = this.mobilityPeriodForm.getRawValue();
 
     this.applicationsService
-      .updateMobilityPeriod(startDate ?? '', endDate ?? '')
+      .updateMobilityPeriod(
+        this.selectedApplicationId,
+        startDate ?? '',
+        endDate ?? '',
+      )
       .subscribe({
         next: (application: any) => {
-          this.applicationExists = true;
           this.applicationStatus = application.status ?? this.applicationStatus;
         },
         error: (error) => {
@@ -276,9 +303,31 @@ export class StudentDashboardComponent implements OnInit {
       });
   }
 
+  // Method to complete the mobility
+  completeMobility(): void {
+    if (!this.selectedApplicationId) {
+      return;
+    }
+
+    this.applicationsService
+      .completeMobility(this.selectedApplicationId)
+      .subscribe({
+        next: (application: any) => {
+          this.applicationStatus = application.status;
+        },
+        error: (error) => {
+          console.error('Error while completing the mobility', error);
+        },
+      });
+  }
+
   // Method to submit the new mapping proposal
   submitNewMapping(): void {
-    if (this.mappingProposalForm.invalid || !this.newLearningAgreementFile) {
+    if (
+      !this.selectedApplicationId ||
+      this.mappingProposalForm.invalid ||
+      !this.newLearningAgreementFile
+    ) {
       this.mappingProposalForm.markAllAsTouched();
       return;
     }
@@ -292,13 +341,13 @@ export class StudentDashboardComponent implements OnInit {
 
     this.applicationsService
       .proposeNewMapping(
+        this.selectedApplicationId,
         homeCourses,
         hostCourses,
         this.newLearningAgreementFile,
       )
       .subscribe({
         next: (application: any) => {
-          this.applicationExists = true;
           this.applicationStatus = application.status ?? this.applicationStatus;
         },
         error: (error) => {
@@ -312,19 +361,20 @@ export class StudentDashboardComponent implements OnInit {
 
   // Method to upload the transcript
   uploadTranscript(): void {
-    if (!this.transcriptFile) {
+    if (!this.selectedApplicationId || !this.transcriptFile) {
       return;
     }
 
-    this.applicationsService.uploadTranscript(this.transcriptFile).subscribe({
-      next: (application: any) => {
-        this.applicationExists = true;
-        this.applicationStatus = application.status ?? this.applicationStatus;
-      },
-      error: (error) => {
-        console.error('Error during the upload of the Transcript', error);
-      },
-    });
+    this.applicationsService
+      .uploadTranscript(this.selectedApplicationId, this.transcriptFile)
+      .subscribe({
+        next: (application: any) => {
+          this.applicationStatus = application.status ?? this.applicationStatus;
+        },
+        error: (error) => {
+          console.error('Error during the upload of the Transcript', error);
+        },
+      });
   }
 
   // Private method to get the course IDs from the form array

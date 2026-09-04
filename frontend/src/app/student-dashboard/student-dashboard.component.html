@@ -12,6 +12,26 @@
     </div>
   </header>
 
+  @if (applications.length > 0) {
+  <section class="application-selector">
+    <label>
+      Candidatura selezionata
+
+      <select
+        [value]="selectedApplicationId"
+        (change)="selectApplication($any($event.target).value)"
+      >
+        @for (application of applications; track application._id) {
+          <option [value]="application._id">
+            {{ application.academicYear }} -
+            {{ application.status }}
+          </option>
+        }
+      </select>
+    </label>
+  </section>
+}
+
   @if (!applicationExists) {
     <section class="workflow-section" [formGroup]="initialApplicationForm">
       <div class="section-heading">

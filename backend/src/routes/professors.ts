@@ -11,9 +11,18 @@ import {
   authorize,
 } from "../middleware/auth";
 import { UserRole } from "../../mongodbModels/userRole";
-import { app } from "../app";
+import { Users } from "../../mongodbModels/users";
 
 const router = Router();
+
+// Helper function to get the professor profile ID associated with a user
+async function getProfessorProfileId(
+  userId: string,
+): Promise<string | undefined> {
+  const user = await Users.findById(userId).select("professor");
+
+  return user?.professor?.toString();
+}
 
 // GET /api/professor/applications
 // Professor can see only applications where he/she is the referent professor
@@ -24,8 +33,18 @@ router.get(
   async (request: AuthenticatedRequest, response) => {
     try {
       // Get all applications where this professor is the referent
+      const professorProfileId = await getProfessorProfileId(
+        request.user!.userId,
+      );
+
+      if (!professorProfileId) {
+        return response.status(403).json({
+          message:
+            "The authenticated account is not linked to a professor profile",
+        });
+      }
       const applications = await Applications.find({
-        referentProfessor: request.user!.userId,
+        referentProfessor: professorProfileId,
       }).populate("student hostUniversity homeCourses hostCourses");
 
       response.json(applications);
@@ -37,7 +56,7 @@ router.get(
   },
 );
 
-// GET /api/professor/applications
+// PATCH /api/professor/applications
 // the referent professor reviews the transcript of records
 // uploaded by the student
 router.patch(
@@ -55,8 +74,20 @@ router.patch(
         return response.status(404).json({ message: "Application not found" });
       }
 
+      const professorProfileId = await getProfessorProfileId(
+        request.user!.userId,
+      );
+
+      // Check if the authenticated user has a linked professor profile
+      if (!professorProfileId) {
+        return response.status(403).json({
+          message:
+            "The authenticated account is not linked to a professor profile",
+        });
+      }
+
       // Verifyes that the professor is the referent
-      if (application.referentProfessor.toString() !== request.user!.userId) {
+      if (application.referentProfessor.toString() !== professorProfileId) {
         return response.status(403).json({ message: "Forbidden" });
       }
 
@@ -99,7 +130,7 @@ router.patch(
   },
 );
 
-// PATCH /api/professor/applications/:id/exams
+// PATCH /api/professor/applications/:id/exams/review
 // Professor reviews exams taken and scores
 router.patch(
   "/applications/:id/exams/review",
@@ -116,8 +147,20 @@ router.patch(
         return response.status(404).json({ message: "Application not found" });
       }
 
+      const professorProfileId = await getProfessorProfileId(
+        request.user!.userId,
+      );
+
+      // Checks if the authenticated user has a linked professor profile
+      if (!professorProfileId) {
+        return response.status(403).json({
+          message:
+            "The authenticated account is not linked to a professor profile",
+        });
+      }
+
       // Checks whether professor is a referent
-      if (application.referentProfessor.toString() !== request.user!.userId) {
+      if (application.referentProfessor.toString() !== professorProfileId) {
         return response.status(403).json({ message: "Forbidden" });
       }
 
@@ -199,10 +242,21 @@ router.patch(
         return;
       }
 
+      const professorProfileId = await getProfessorProfileId(
+        request.user!.userId,
+      );
+
+      // Check if the authenticated user has a linked professor profile
+      if (!professorProfileId) {
+        return response.status(403).json({
+          message:
+            "The authenticated account is not linked to a professor profile",
+        });
+      }
+
       // Check if the professor is the referent of this application
-      if (application.referentProfessor.toString() !== request.user!.userId) {
-        response.status(403).json({ message: "Forbidden" });
-        return;
+      if (application.referentProfessor.toString() !== professorProfileId) {
+        return response.status(403).json({ message: "Forbidden" });
       }
 
       // Check if the application is still in the initial created status

@@ -191,17 +191,49 @@ export const seedDatabase = async () => {
     ]);
   }
 
-  // Student user
-  const existingStudentUser = await Users.findOne({
-    email: "907785@stud.unive.it",
+  // Seed student and professor user accounts
+  const matilde = await Students.findOne({
+    fullName: "Matilde Moretti",
   });
-  if (!existingStudentUser) {
-    const passwordHash = await bcrypt.hash("Password123!", 12);
 
-    await Users.create({
-      email: "907785@stud.unive.it",
-      passwordHash,
-      role: UserRole.STUDENT,
-    });
+  const professorMelonio = await Professors.findOne({
+    fullName: "Prof.ssa Alessandra Melonio",
+  });
+
+  if (!matilde || !professorMelonio) {
+    throw new Error(
+      "Student or professor profile  is missing from the seed data",
+    );
   }
+
+  const studentPasswordHash = await bcrypt.hash("Password123!", 12);
+
+  // Creates the account if not already existing
+  await Users.updateOne(
+    { email: "907785@stud.unive.it" },
+    {
+      $set: {
+        email: "907785@stud.unive.it",
+        passwordHash: studentPasswordHash,
+        role: UserRole.STUDENT,
+        student: matilde!._id,
+      },
+    },
+    { upsert: true },
+  );
+
+  const professorPasswordHash = await bcrypt.hash("Password123!", 12);
+
+  await Users.updateOne(
+    { email: "melonio@unive.it" },
+    {
+      $set: {
+        email: "melonio@unive.it",
+        passwordHash: professorPasswordHash,
+        role: UserRole.PROFESSOR,
+        professor: professorMelonio._id,
+      },
+    },
+    { upsert: true },
+  );
 };

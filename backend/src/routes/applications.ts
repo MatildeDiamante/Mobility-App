@@ -13,9 +13,23 @@ import {
 } from "../middleware/auth";
 import { UserRole } from "../../mongodbModels/userRole";
 import { Courses, CourseType } from "../../mongodbModels/exams";
+import { Users } from "../../mongodbModels/users";
 
 const router = Router();
 
+// Retrieves the student ID associated with a user ID
+async function getStudentId(userId: string) {
+  const user = await Users.findById(userId).select("student");
+
+  return user?.student?.toString();
+}
+
+// Retrieves the professor ID associated with a user ID
+async function getProfessorId(userId: string) {
+  const user = await Users.findById(userId).select("professor");
+
+  return user?.professor?.toString();
+}
 // Application validation function
 function hasDuplicateCourseIds(courseIds: string[]): boolean {
   return new Set(courseIds).size !== courseIds.length;
@@ -106,9 +120,19 @@ router.post(
         });
       }
 
+      // Retrieves the student ID associated with the authenticated user
+      const studentId = await getStudentId(request.user!.userId);
+
+      if (!studentId) {
+        return response.status(403).json({
+          message:
+            "The authenticated user is not associated with a student profile",
+        });
+      }
+
       // Creates the application with the data received
       const application = await Applications.create({
-        student: request.user!.userId,
+        student: studentId,
         academicYear: request.body.academicYear,
         hostUniversity: request.body.hostUniversity,
         duration: request.body.duration,
@@ -136,8 +160,17 @@ router.get(
   authorize(UserRole.STUDENT),
   async (request: AuthenticatedRequest, response) => {
     try {
+      const studentId = await getStudentId(request.user!.userId);
+
+      if (!studentId) {
+        return response.status(403).json({
+          message:
+            "The authenticated user is not associated with a student profile",
+        });
+      }
+
       const application = await Applications.find({
-        student: request.user!.userId,
+        student: studentId,
       })
         .populate("hostUniversity referentProfessor homeCourses hostCourses")
         .sort({ createdAt: -1 });
@@ -166,7 +199,15 @@ router.post(
         return response.status(404).json({ message: "Application not found" });
       }
 
-      if (application.student.toString() !== request.user!.userId) {
+      const studentId = await getStudentId(request.user!.userId);
+      if (!studentId) {
+        return response.status(403).json({
+          message:
+            "The authenticated user is not associated with a student profile",
+        });
+      }
+
+      if (application.student.toString() !== studentId) {
         return response.status(403).json({
           message: "Forbidden",
         });
@@ -226,7 +267,16 @@ router.post(
         return response.status(404).json({ message: "Application not found" });
       }
 
-      if (application.student.toString() !== request.user!.userId) {
+      const studentId = await getStudentId(request.user!.userId);
+
+      if (!studentId) {
+        return response.status(403).json({
+          message:
+            "The authenticated account is not linked to a student profile",
+        });
+      }
+
+      if (application.student.toString() !== studentId) {
         return response.status(403).json({
           message: "Forbidden",
         });
@@ -278,7 +328,16 @@ router.patch(
         });
       }
 
-      if (application.student.toString() !== request.user!.userId) {
+      const studentId = await getStudentId(request.user!.userId);
+
+      if (!studentId) {
+        return response.status(403).json({
+          message:
+            "The authenticated account is not linked to a student profile",
+        });
+      }
+
+      if (application.student.toString() !== studentId) {
         return response.status(403).json({
           message: "Forbidden",
         });
@@ -329,7 +388,16 @@ router.patch(
         return response.status(404).json({ message: "Application not found" });
       }
 
-      if (application.student.toString() !== request.user!.userId) {
+      const studentId = await getStudentId(request.user!.userId);
+
+      if (!studentId) {
+        return response.status(403).json({
+          message:
+            "The authenticated account is not linked to a student profile",
+        });
+      }
+
+      if (application.student.toString() !== studentId) {
         return response.status(403).json({
           message: "Forbidden",
         });
@@ -511,8 +579,16 @@ router.get(
         response.status(404).json({ message: "Application not found" });
         return;
       }
+      const studentId = await getStudentId(request.user!.userId);
 
-      if (application.student.toString() !== request.user!.userId) {
+      if (!studentId) {
+        return response.status(403).json({
+          message:
+            "The authenticated account is not linked to a student profile",
+        });
+      }
+
+      if (application.student.toString() !== studentId) {
         return response.status(403).json({ message: "Forbidden" });
       }
 
@@ -526,8 +602,14 @@ router.get(
         application.referentProfessor._id.toString() === request.user!.userId;
 
       // Student can see only his own applications
-      const isOwner =
-        application.student._id.toString() === request.user!.userId;
+      if (!studentId) {
+        return response.status(403).json({
+          message:
+            "The authenticated account is not linked to a student profile",
+        });
+      }
+
+      const isOwner = application.student._id.toString() === studentId;
 
       if (isProfessor && !isReferent) {
         response.status(403).json({ message: "Forbidden" });

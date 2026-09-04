@@ -16,6 +16,26 @@ import { app } from "../app";
 
 const router = Router();
 
+// Application validation function
+function hasDuplicateCourseIds(courseIds: string[]): boolean {
+  return new Set(courseIds).size !== courseIds.length;
+}
+
+// Validates the mobility period (start and end dates)
+function isValidMobilityPeriod(
+  startDateValue: string,
+  endDateValue: string,
+): boolean {
+  const startDate = new Date(startDateValue);
+  const endDate = new Date(endDateValue);
+
+  return (
+    !Number.isNaN(startDate.getTime()) &&
+    !Number.isNaN(endDate.getTime()) &&
+    startDate < endDate
+  );
+}
+
 // Configuration of multer for the PDF upload
 const upload = multer({
   dest: "uploads/",
@@ -48,6 +68,30 @@ router.post(
         return;
       }
 
+      const homeCourses = JSON.parse(request.body.homeCourses);
+      const hostCourses = JSON.parse(request.body.hostCourses);
+
+      if (
+        !Array.isArray(homeCourses) ||
+        !Array.isArray(hostCourses) ||
+        homeCourses.length !== 3 ||
+        hostCourses.length !== 3
+      ) {
+        return response.status(400).json({
+          message:
+            "Exactly three home courses and three host courses are required",
+        });
+      }
+
+      if (
+        hasDuplicateCourseIds(homeCourses) ||
+        hasDuplicateCourseIds(hostCourses)
+      ) {
+        return response.status(400).json({
+          message: "The same course cannot be selected more than once",
+        });
+      }
+
       // Creates the application with the data received
       const application = await Applications.create({
         student: request.user!.userId,
@@ -55,8 +99,8 @@ router.post(
         hostUniversity: request.body.hostUniversity,
         duration: request.body.duration,
         referentProfessor: request.body.referentProfessor,
-        homeCourses: JSON.parse(request.body.homeCourses),
-        hostCourses: JSON.parse(request.body.hostCourses),
+        homeCourses,
+        hostCourses,
         documentPath: request.file.path,
         status: ApplicationStatus.CREATED,
       });
@@ -78,14 +122,11 @@ router.get(
   authorize(UserRole.STUDENT),
   async (request: AuthenticatedRequest, response) => {
     try {
-      const application = await Applications.findOne({
+      const application = await Applications.find({
         student: request.user!.userId,
-      }).populate("hostUniversity referentProfessor homeCourses hostCourses");
-
-      if (!application) {
-        response.status(404).json({ message: "Application not found" });
-        return;
-      }
+      })
+        .populate("hostUniversity referentProfessor homeCourses hostCourses")
+        .sort({ createdAt: -1 });
 
       response.json(application);
     } catch (error) {
@@ -96,21 +137,25 @@ router.get(
   },
 );
 
-// POST /api/applications/me/exams
+// POST /api/applications/:id/exams
 // Students can update exams scores
 router.post(
-  "/me/exams",
+  "/:id/exams",
   authenticate,
   authorize(UserRole.STUDENT),
   async (request: AuthenticatedRequest, response) => {
     try {
       // Checks if student's application exist
-      const application = await Applications.findOne({
-        student: request.user!.userId,
-      });
+      const application = await Applications.findById(request.params.id);
 
       if (!application) {
         return response.status(404).json({ message: "Application not found" });
+      }
+
+      if (application.student.toString() !== request.user!.userId) {
+        return response.status(403).json({
+          message: "Forbidden",
+        });
       }
 
       const { passedHostCourses } = request.body;
@@ -144,10 +189,10 @@ router.post(
   },
 );
 
-// POST /api/applications/me/transcript
+// POST /api/applications/:id/transcript
 // Students can upload the Transcrip of Records in PDF
 router.post(
-  "/me/transcript",
+  "/:id/transcript",
   authenticate,
   authorize(UserRole.STUDENT),
   upload.single("transcript"),
@@ -161,12 +206,24 @@ router.post(
       }
 
       // Finds students' application
-      const application = await Applications.findOne({
-        student: request.user!.userId,
-      });
+      const application = await Applications.findById(request.params.id);
 
       if (!application) {
         return response.status(404).json({ message: "Application not found" });
+      }
+
+      if (application.student.toString() !== request.user!.userId) {
+        return response.status(403).json({
+          message: "Forbidden",
+        });
+      }
+
+      // Checks that the mobility has been completed before allowing the transcript upload
+      if (application.status !== ApplicationStatus.MOBILITY_COMPLETED) {
+        return response.status(400).json({
+          message:
+            "Transcript of Records can only be uploaded after mobility completion",
+        });
       }
 
       // Saves the uploaded file path and resets the review date
@@ -176,6 +233,7 @@ router.post(
       application.transcriptReviewDate = undefined;
       application.transcriptComment = undefined;
 
+      application.status = ApplicationStatus.WAITING_FOR_EXAM_SCORE_APPROVAL;
       await application.save();
 
       response.status(201).json({
@@ -190,21 +248,77 @@ router.post(
   },
 );
 
-// PATCH /api/applications/me
+// PATCH /api/applications/:id/complete-mobility
+// Marks the mobility as complete for the authenticated student's application
+router.patch(
+  "/:id/complete-mobility",
+  authenticate,
+  authorize(UserRole.STUDENT),
+  async (request: AuthenticatedRequest, response) => {
+    try {
+      const application = await Applications.findById(request.params.id);
+
+      if (!application) {
+        return response.status(404).json({
+          message: "Application not found",
+        });
+      }
+
+      if (application.student.toString() !== request.user!.userId) {
+        return response.status(403).json({
+          message: "Forbidden",
+        });
+      }
+
+      // Check if the mobility is in progress before allowing it to be completed
+      if (application.status !== ApplicationStatus.MOBILITY_IN_PROGRESS) {
+        return response.status(400).json({
+          message: "Only a mobility in progress can be completed",
+        });
+      }
+
+      if (!application.endDate || application.endDate > new Date()) {
+        return response.status(400).json({
+          message: "The mobility end date has not been reached yet",
+        });
+      }
+
+      application.status = ApplicationStatus.MOBILITY_COMPLETED;
+
+      await application.save();
+
+      response.json({
+        message: "Mobility marked as completed",
+        application,
+      });
+    } catch (error) {
+      response.status(400).json({
+        message: "Failed to complete mobility",
+        error,
+      });
+    }
+  },
+);
+
+// PATCH /api/applications/:id
 // Student can modify its own application
 router.patch(
-  "/me",
+  "/:id",
   authenticate,
   authorize(UserRole.STUDENT),
   upload.single("document"),
   async (request: AuthenticatedRequest, response) => {
     try {
-      const application = await Applications.findOne({
-        student: request.user!.userId,
-      });
+      const application = await Applications.findById(request.params.id);
 
       if (!application) {
         return response.status(404).json({ message: "Application not found" });
+      }
+
+      if (application.student.toString() !== request.user!.userId) {
+        return response.status(403).json({
+          message: "Forbidden",
+        });
       }
 
       /* Checks if the application is still on "submitted"
@@ -243,6 +357,29 @@ router.patch(
       const isCourseChangeRequest =
         request.body.homeCourses || request.body.hostCourses;
 
+      const newHomeCourses = request.body.homeCourses
+        ? JSON.parse(request.body.homeCourses)
+        : undefined;
+
+      const newHostCourses = request.body.hostCourses
+        ? JSON.parse(request.body.hostCourses)
+        : undefined;
+
+      if (
+        (newHomeCourses &&
+          (!Array.isArray(newHomeCourses) ||
+            newHomeCourses.length !== 3 ||
+            hasDuplicateCourseIds(newHomeCourses))) ||
+        (newHostCourses &&
+          (!Array.isArray(newHostCourses) ||
+            newHostCourses.length !== 3 ||
+            hasDuplicateCourseIds(newHostCourses)))
+      ) {
+        return response.status(400).json({
+          message: "Each course list must contain exactly 3 unique courses",
+        });
+      }
+
       if (isCourseChangeRequest && !request.file) {
         return response.status(400).json({
           message:
@@ -255,12 +392,29 @@ router.patch(
         application.learningAgreementApproved = false;
       }
 
-      // New mobility dates
-      if (request.body.startDate) {
-        application.startDate = new Date(request.body.startDate);
-      }
-      if (request.body.endDate) {
-        application.endDate = new Date(request.body.endDate);
+      // New mobility dates with validation
+      const newStartDate = request.body.startDate;
+      const newEndDate = request.body.endDate;
+
+      if (newStartDate || newEndDate) {
+        const startDateValue =
+          newStartDate || application.startDate?.toISOString().slice(0, 10);
+
+        const endDateValue =
+          newEndDate || application.endDate?.toISOString().slice(0, 10);
+
+        if (
+          !startDateValue ||
+          !endDateValue ||
+          !isValidMobilityPeriod(startDateValue, endDateValue)
+        ) {
+          return response.status(400).json({
+            message: "Start date must be before end date",
+          });
+        }
+
+        application.startDate = new Date(startDateValue);
+        application.endDate = new Date(endDateValue);
       }
 
       if (
@@ -280,11 +434,9 @@ router.patch(
           application.status === ApplicationStatus.CREATED ||
           application.status === ApplicationStatus.SUBMITTED
         ) {
-          application.homeCourses = JSON.parse(request.body.homeCourses);
+          application.homeCourses = newHomeCourses;
         } else {
-          application.proposedHomeCourses = JSON.parse(
-            request.body.homeCourses,
-          );
+          application.proposedHomeCourses = newHomeCourses;
           application.courseChangeStatus = CourseChangeStatus.PENDING;
         }
       }
@@ -292,14 +444,12 @@ router.patch(
       if (request.body.hostCourses) {
         //application.hostCourses = JSON.parse(request.body.hostCourses);
         if (
-          (application.status === ApplicationStatus.CREATED ||
-            application.status) === ApplicationStatus.SUBMITTED
+          application.status === ApplicationStatus.CREATED ||
+          application.status === ApplicationStatus.SUBMITTED
         ) {
-          application.hostCourses = JSON.parse(request.body.hostCourses);
+          application.hostCourses = newHostCourses;
         } else {
-          application.proposedHostCourses = JSON.parse(
-            request.body.hostCourses,
-          );
+          application.proposedHostCourses = newHostCourses;
           application.courseChangeStatus = CourseChangeStatus.PENDING;
         }
       }
@@ -333,7 +483,12 @@ router.get(
         return;
       }
 
+      if (application.student.toString() !== request.user!.userId) {
+        return response.status(403).json({ message: "Forbidden" });
+      }
+
       // Check permissions based on user role
+      const isStudent = request.user!.role === UserRole.STUDENT;
       const isProfessor = request.user!.role === UserRole.PROFESSOR;
       const isStaff = request.user!.role === UserRole.OFFICE_STAFF;
 
@@ -341,12 +496,22 @@ router.get(
       const isReferent =
         application.referentProfessor._id.toString() === request.user!.userId;
 
+      // Student can see only his own applications
+      const isOwner =
+        application.student._id.toString() === request.user!.userId;
+
       if (isProfessor && !isReferent) {
         response.status(403).json({ message: "Forbidden" });
         return;
       }
 
-      if (!isProfessor && !isStaff) {
+      if (isStudent && !isOwner) {
+        return response.status(403).json({
+          message: "Forbidden",
+        });
+      }
+
+      if (!isStudent && !isProfessor && !isStaff) {
         response.status(403).json({ message: "Forbidden" });
         return;
       }

@@ -12,7 +12,7 @@ import {
   authorize,
 } from "../middleware/auth";
 import { UserRole } from "../../mongodbModels/userRole";
-import { app } from "../app";
+import { Courses, CourseType } from "../../mongodbModels/exams";
 
 const router = Router();
 
@@ -89,6 +89,20 @@ router.post(
       ) {
         return response.status(400).json({
           message: "The same course cannot be selected more than once",
+        });
+      }
+
+      // Associates courses to the respective university
+      const validHostCourses = await Courses.countDocuments({
+        _id: { $in: hostCourses },
+        type: CourseType.HOST,
+        hostUniversity: request.body.hostUniversity,
+      });
+
+      if (validHostCourses !== hostCourses.length) {
+        return response.status(400).json({
+          message:
+            "The selected host courses do not belong to the chosen host university",
         });
       }
 
@@ -378,6 +392,21 @@ router.patch(
         return response.status(400).json({
           message: "Each course list must contain exactly 3 unique courses",
         });
+      }
+
+      if (newHostCourses) {
+        const validHostCourses = await Courses.countDocuments({
+          _id: { $in: newHostCourses },
+          type: CourseType.HOST,
+          hostUniversity: application.hostUniversity,
+        });
+
+        if (validHostCourses !== newHostCourses.length) {
+          return response.status(400).json({
+            message:
+              "The selected host courses do not belong to this application's host university",
+          });
+        }
       }
 
       if (isCourseChangeRequest && !request.file) {

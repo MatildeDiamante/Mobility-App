@@ -1,7 +1,10 @@
+import bcrypt from "bcryptjs";
 import { Professors } from "../mongodbModels/professors";
 import { Courses, CourseType } from "../mongodbModels/exams";
 import { Students, ErasmusDuration } from "../mongodbModels/students";
 import { HostUniversities } from "../mongodbModels/universities";
+import { Users } from "../mongodbModels/users";
+import { UserRole } from "../mongodbModels/userRole";
 
 export const seedDatabase = async () => {
   const count = await Students.countDocuments();
@@ -186,5 +189,19 @@ export const seedDatabase = async () => {
         hostCourses: [softArch._id, computerNets._id, dbSystems._id],
       },
     ]);
+
+    const existingStudentUser = await Users.findOne({
+      email: "907785@stud.unive.it",
+    });
+    if (!existingStudentUser) {
+      const passwordHash = await bcrypt.hash("GattiCariniCoccolosi", 12);
+
+      await Users.create({
+        email: "907785@stud.unive.it",
+        passwordHash,
+        role: UserRole.STUDENT,
+        fullName: "Matilde Moretti",
+      });
+    }
   }
 };

@@ -100,7 +100,12 @@
             <label>
               Corso home {{ $index + 1 }}
 
-              <select [formControlName]="$index">
+              <select
+                [formControlName]="$index"
+                [disabled]="
+                  !initialApplicationForm.controls.hostUniversity.value
+                "
+              >
                 <option value="">Seleziona un corso home</option>
 
                 @for (course of homeCourses; track course._id) {

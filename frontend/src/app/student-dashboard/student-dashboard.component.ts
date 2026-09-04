@@ -9,6 +9,7 @@ import {
 import { ApplicationsService } from '../services/applications.service';
 import { ListsService } from '../services/lists.service';
 import { CourseOption, InitialApplication } from '../models/application.model';
+import { startWith } from 'rxjs';
 
 // Local models for the component
 interface UniversityOption {
@@ -107,7 +108,33 @@ export class StudentDashboardComponent implements OnInit {
   // Method ngOnInit, called when the component is initialized
   ngOnInit(): void {
     this.loadLists();
+    this.initialApplicationForm.controls.hostUniversity.valueChanges
+      .pipe(
+        startWith(this.initialApplicationForm.controls.hostUniversity.value),
+      )
+      .subscribe((hostUniversityId) => {
+        this.initialHostCourses.reset();
+
+        if (!hostUniversityId) {
+          this.hostCourses = [];
+          return;
+        }
+
+        this.loadHostCourses(hostUniversityId);
+      });
     this.loadMyApplication();
+  }
+
+  private loadHostCourses(hostUniversityId: string): void {
+    this.listsService.getHostCourses(hostUniversityId).subscribe({
+      next: (courses) => {
+        this.hostCourses = courses;
+      },
+      error: (error) => {
+        this.hostCourses = [];
+        console.error('Error during the loading of the host courses', error);
+      },
+    });
   }
 
   get initialHomeCourses(): FormArray {
@@ -124,6 +151,23 @@ export class StudentDashboardComponent implements OnInit {
 
   get proposedHostCourses(): FormArray {
     return this.mappingProposalForm.controls.hostCourses;
+  }
+
+  // Method to exclude already selected courses
+  isInitiallySelected(
+    courseId: string,
+    currentCourseId: string | null,
+    courseType: 'home' | 'host',
+  ): boolean {
+    const courseControls =
+      courseType === 'home'
+        ? this.initialHomeCourses.controls
+        : this.initialHostCourses.controls;
+
+    return courseControls.some(
+      (control) =>
+        control.value === courseId && control.value !== currentCourseId,
+    );
   }
 
   private createCourseControl() {
@@ -159,16 +203,6 @@ export class StudentDashboardComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error during the loading of home courses', error);
-      },
-    });
-
-    this.listsService.getHostCourses().subscribe({
-      // host courses
-      next: (courses) => {
-        this.hostCourses = courses;
-      },
-      error: (error) => {
-        console.error('Error during the loading of host courses', error);
       },
     });
   }

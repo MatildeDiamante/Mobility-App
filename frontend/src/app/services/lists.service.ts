@@ -31,9 +31,12 @@ export class ListsService {
     });
   }
 
-  getHostCourses() {
-    return this.http.get<CourseOption[]>(`${this.apiUrl}/courses?type=host`, {
-      withCredentials: true,
-    });
+  getHostCourses(hostUniversityId: string) {
+    return this.http.get<CourseOption[]>(
+      `${this.apiUrl}/courses?type=host&hostUniversity=${hostUniversityId}`,
+      {
+        withCredentials: true,
+      },
+    );
   }
 }

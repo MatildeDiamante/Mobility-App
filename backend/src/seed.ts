@@ -189,19 +189,19 @@ export const seedDatabase = async () => {
         hostCourses: [softArch._id, computerNets._id, dbSystems._id],
       },
     ]);
+  }
 
-    const existingStudentUser = await Users.findOne({
+  // Student user
+  const existingStudentUser = await Users.findOne({
+    email: "907785@stud.unive.it",
+  });
+  if (!existingStudentUser) {
+    const passwordHash = await bcrypt.hash("Password123!", 12);
+
+    await Users.create({
       email: "907785@stud.unive.it",
+      passwordHash,
+      role: UserRole.STUDENT,
     });
-    if (!existingStudentUser) {
-      const passwordHash = await bcrypt.hash("GattiCariniCoccolosi", 12);
-
-      await Users.create({
-        email: "907785@stud.unive.it",
-        passwordHash,
-        role: UserRole.STUDENT,
-        fullName: "Matilde Moretti",
-      });
-    }
   }
 };

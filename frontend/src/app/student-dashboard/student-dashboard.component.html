@@ -13,24 +13,24 @@
   </header>
 
   @if (applications.length > 0) {
-  <section class="application-selector">
-    <label>
-      Candidatura selezionata
+    <section class="application-selector">
+      <label>
+        Candidatura selezionata
 
-      <select
-        [value]="selectedApplicationId"
-        (change)="selectApplication($any($event.target).value)"
-      >
-        @for (application of applications; track application._id) {
-          <option [value]="application._id">
-            {{ application.academicYear }} -
-            {{ application.status }}
-          </option>
-        }
-      </select>
-    </label>
-  </section>
-}
+        <select
+          [value]="selectedApplicationId"
+          (change)="selectApplication($any($event.target).value)"
+        >
+          @for (application of applications; track application._id) {
+            <option [value]="application._id">
+              {{ application.academicYear }} -
+              {{ application.status }}
+            </option>
+          }
+        </select>
+      </label>
+    </section>
+  }
 
   @if (!applicationExists) {
     <section class="workflow-section" [formGroup]="initialApplicationForm">
@@ -104,7 +104,16 @@
                 <option value="">Seleziona un corso home</option>
 
                 @for (course of homeCourses; track course._id) {
-                  <option [value]="course._id">
+                  <option
+                    [value]="course._id"
+                    [disabled]="
+                      isInitiallySelecred(
+                        course._id,
+                        $any(courseControl.value),
+                        'home'
+                      )
+                    "
+                  >
                     {{ course.code }} - {{ course.name }} -
                     {{ course.credits }} ECTS
                   </option>
@@ -125,7 +134,16 @@
                 <option value="">Seleziona un corso host</option>
 
                 @for (course of hostCourses; track course._id) {
-                  <option [value]="course._id">
+                  <option
+                    [value]="course._id"
+                    [disabled]="
+                      isInitiallySelecred(
+                        course._id,
+                        $any(courseControl.value),
+                        'host'
+                      )
+                    "
+                  >
                     {{ course.code }} - {{ course.name }} -
                     {{ course.credits }} ECTS
                   </option>

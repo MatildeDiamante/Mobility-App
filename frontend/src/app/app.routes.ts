@@ -4,6 +4,7 @@ import { LoginComponent } from './login/login.component';
 import { StudentDashboardComponent } from './student-dashboard/student-dashboard.component';
 import { authGuard } from './guards/auth.guard';
 import { roleGuard } from './guards/role.guard';
+import { ProfessorDashboardComponent } from './professor-dashboard/professor-dashboard.component';
 
 export const routes: Routes = [
   {
@@ -15,6 +16,12 @@ export const routes: Routes = [
     component: StudentDashboardComponent,
     canActivate: [authGuard, roleGuard],
     data: { role: 'student' },
+  },
+  {
+    path: 'professor',
+    component: ProfessorDashboardComponent,
+    canActivate: [authGuard, roleGuard],
+    data: { role: 'professor' },
   },
   // Manages the main URL of the app
   {

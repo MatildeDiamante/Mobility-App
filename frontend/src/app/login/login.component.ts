@@ -96,8 +96,12 @@ export class LoginComponent {
     this.authService.login(email, password).subscribe({
       next: (response) => {
         this.isSubmitting = false;
-        const destination =
-          response.user.role === 'student' ? '/student' : '/login';
+        const destinations: Record<string, string> = {
+          student: '/student',
+          professor: '/professor',
+        };
+
+        const destination = destinations[response.user.role] ?? '/login';
 
         void this.router.navigateByUrl(destination);
       },

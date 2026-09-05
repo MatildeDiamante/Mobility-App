@@ -11,7 +11,6 @@ import {
   authorize,
 } from "../middleware/auth";
 import { UserRole } from "../../mongodbModels/userRole";
-import { app } from "../app";
 
 const router = Router();
 
@@ -26,9 +25,9 @@ router.get(
       // Get all applications with optional filtering by status
       const { status } = request.query;
 
-      let query: any = {};
+      let query: Record<string, unknown> = {};
       if (status) {
-        query.status = status;
+        query["status"] = status;
       }
 
       const applications = await Applications.find(query).populate(
@@ -40,6 +39,60 @@ router.get(
       response
         .status(500)
         .json({ message: "Failed to fetch applications", error });
+    }
+  },
+);
+
+// PATCH /api/office/applications/:id/pre-departure
+// Completes the office verification before the student's departure
+router.patch(
+  "/applications/:id/pre-departure",
+  authenticate,
+  authorize(UserRole.OFFICE_STAFF),
+  async (request: AuthenticatedRequest, response) => {
+    try {
+      const application = await Applications.findById(request.params.id);
+
+      if (!application) {
+        return response.status(404).json({ message: "Application not found" });
+      }
+
+      // Ensure the application is in the correct status for pre-departure verification
+      if (
+        application.status !==
+        ApplicationStatus.AWAITING_LEARNING_AGREEMENT_APPROVAL
+      ) {
+        return response.status(400).json({
+          message:
+            "Pre-departure verification is available only after professor approval",
+        });
+      }
+
+      // Ensure the learning agreement has been approved
+      if (!application.learningAgreementApproved) {
+        return response.status(400).json({
+          message: "The Learning Agreement has not been approved",
+        });
+      }
+
+      // Update the application status and add office verification details
+      application.status = ApplicationStatus.PRE_DEPARTURE_COMPLETED;
+      application.officeComment =
+        request.body.comment?.trim() ||
+        "Pre-departure verification completed by office staff";
+      application.officeVerificationDate = new Date();
+
+      await application.save();
+
+      response.json({
+        message: "Pre-departure verification completed successfully",
+        application,
+      });
+    } catch (error) {
+      response.status(400).json({
+        message: "Failed to complete pre-departure verification",
+        error,
+      });
     }
   },
 );
@@ -63,14 +116,12 @@ router.patch(
 
       // The application must already be in the final review phase before office closure
       if (
-        application.status !== ApplicationStatus.WAITING_FOR_EXAM_SCORE_APPROVAL &&
-        application.status !== ApplicationStatus.MOBILITY_IN_PROGRESS
+        application.status !== ApplicationStatus.WAITING_FOR_EXAM_SCORE_APPROVAL
       ) {
-        response.status(400).json({
+        return response.status(400).json({
           message:
-            "Can only verify applications after the mobility and exam review phase",
+            "The application can be closed only after transcript and exam review",
         });
-        return;
       }
 
       // Final checks before closing the application
@@ -97,6 +148,7 @@ router.patch(
         documentPath: application.documentPath,
         learningAgreementApproved: true,
       }); */
+        canBeMarkedCompleted(application) &&
         hasLearningAgreementApproved &&
         hasTranscriptApproved &&
         hasApprovedExams &&
@@ -120,7 +172,7 @@ router.patch(
       // Update the application status and add office comment and verification date
       application.status = ApplicationStatus.CLOSED;
       application.officeComment =
-        comment || "Application verified and closed by office staff";
+        comment?.trim() || "Application verified and closed by office staff";
       //application.learningAgreementApproved = true;
       application.officeVerificationDate = new Date();
 

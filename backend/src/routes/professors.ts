@@ -266,6 +266,13 @@ router.patch(
         return;
       }
 
+      if (["reject", "reject_changes"].includes(decision) && !comment?.trim()) {
+        return response.status(400).json({
+          message:
+            "A reason is required when rejecting an application of course changes",
+        });
+      }
+
       const application = await Applications.findById(request.params.id);
 
       if (!application) {
@@ -303,6 +310,7 @@ router.patch(
         if (decision === "approve") {
           application.status =
             ApplicationStatus.AWAITING_LEARNING_AGREEMENT_APPROVAL;
+          application.learningAgreementApproved = true;
         } else {
           application.status = ApplicationStatus.CANCELED;
         }

@@ -99,6 +99,7 @@ export class LoginComponent {
         const destinations: Record<string, string> = {
           student: '/student',
           professor: '/professor',
+          office_staff: '/office',
         };
 
         const destination = destinations[response.user.role] ?? '/login';

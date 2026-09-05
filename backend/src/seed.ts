@@ -208,7 +208,7 @@ export const seedDatabase = async () => {
 
   const studentPasswordHash = await bcrypt.hash("Password123!", 12);
 
-  // Creates the account if not already existing
+  // Creates the accounts of students, professors, and office staff
   await Users.updateOne(
     { email: "907785@stud.unive.it" },
     {
@@ -232,6 +232,20 @@ export const seedDatabase = async () => {
         passwordHash: professorPasswordHash,
         role: UserRole.PROFESSOR,
         professor: professorMelonio._id,
+      },
+    },
+    { upsert: true },
+  );
+
+  const officePasswordHash = await bcrypt.hash("Password123!", 12);
+
+  await Users.updateOne(
+    { email: "office@unive.it" },
+    {
+      $set: {
+        email: "office@unive.it",
+        passwordHash: officePasswordHash,
+        role: UserRole.OFFICE_STAFF,
       },
     },
     { upsert: true },

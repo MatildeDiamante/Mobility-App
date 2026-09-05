@@ -5,6 +5,7 @@ import { StudentDashboardComponent } from './student-dashboard/student-dashboard
 import { authGuard } from './guards/auth.guard';
 import { roleGuard } from './guards/role.guard';
 import { ProfessorDashboardComponent } from './professor-dashboard/professor-dashboard.component';
+import { OfficeDashboardComponent } from './office-dashboard/office-dashboard.component';
 
 export const routes: Routes = [
   {
@@ -23,6 +24,13 @@ export const routes: Routes = [
     canActivate: [authGuard, roleGuard],
     data: { role: 'professor' },
   },
+  {
+    path: 'office',
+    component: OfficeDashboardComponent,
+    canActivate: [authGuard, roleGuard],
+    data: { role: 'office_staff' },
+  },
+
   // Manages the main URL of the app
   {
     path: '',

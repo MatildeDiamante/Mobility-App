@@ -681,4 +681,53 @@ router.get(
   },
 );
 
+// GET /api/applications/:id/transcript/document
+// Student owner, referent professor, and office staff can download the transcript
+router.get(
+  "/:id/transcript/document",
+  authenticate,
+  async (request: AuthenticatedRequest, response) => {
+    try {
+      const application = await Applications.findById(request.params.id);
+
+      if (!application || !application.transcriptDocumentPath) {
+        return response.status(404).json({
+          message: "Transcript of Records not found",
+        });
+      }
+
+      // Check if the user is office staff
+      const isOfficeStaff = request.user!.role === UserRole.OFFICE_STAFF;
+
+      if (isOfficeStaff) {
+        return response.download(application.transcriptDocumentPath);
+      }
+
+      // Get the student and professor IDs for the current user
+      const studentId = await getStudentId(request.user!.userId);
+      const professorId = await getProfessorId(request.user!.userId);
+
+      // Check if the current user is the owner (student) or the referent professor
+      const isOwner =
+        request.user!.role === UserRole.STUDENT &&
+        studentId === application.student.toString();
+
+      const isReferent =
+        request.user!.role === UserRole.PROFESSOR &&
+        professorId === application.referentProfessor.toString();
+
+      if (!isOwner && !isReferent) {
+        return response.status(403).json({ message: "Forbidden" });
+      }
+
+      response.download(application.transcriptDocumentPath);
+    } catch (error) {
+      response.status(500).json({
+        message: "Failed to download Transcript of Records",
+        error,
+      });
+    }
+  },
+);
+
 export default router;

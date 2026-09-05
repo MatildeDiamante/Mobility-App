@@ -417,6 +417,7 @@ router.patch(
         ApplicationStatus.SUBMITTED,
         ApplicationStatus.PROFESSOR_APPROVED,
         ApplicationStatus.OFFICE_VERIFIED,
+        ApplicationStatus.MOBILITY_IN_PROGRESS,
       ].includes(application.status);
 
       if (!canEditApplication) {
@@ -485,8 +486,8 @@ router.patch(
       }
 
       if (request.file && isCourseChangeRequest) {
-        application.documentPath = request.file.path;
-        application.learningAgreementApproved = false;
+        application.proposedDocumentPath = request.file.path;
+        application.courseChangeStatus = CourseChangeStatus.PENDING;
       }
 
       // New mobility dates with validation

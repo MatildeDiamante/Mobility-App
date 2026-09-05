@@ -56,7 +56,7 @@ router.get(
   },
 );
 
-// PATCH /api/professor/applications
+// PATCH /api/professor/applications/:id/transcript/review
 // the referent professor reviews the transcript of records
 // uploaded by the student
 router.patch(
@@ -65,7 +65,7 @@ router.patch(
   authorize(UserRole.PROFESSOR),
   async (request: AuthenticatedRequest, response) => {
     try {
-      const { approved, comment, approvedHostCourses } = request.body;
+      const { approved, comment } = request.body;
 
       // Checks that application exists
       const application = await Applications.findById(request.params.id);
@@ -101,16 +101,19 @@ router.patch(
       // Professor's decision and esplanation
       application.transcriptApproved = Boolean(approved);
       application.transcriptReviewDate = new Date();
-      application.transcriptComment = comment || "";
+      application.transcriptComment = comment?.trim() || "";
 
       // If approved, stores the passed courses
       if (approved) {
-        application.approvedHostCourses = approvedHostCourses || [];
-        application.approvedHomeCourses =
-          approvedHostCourses || application.hostCourses;
+        application.status = ApplicationStatus.WAITING_FOR_EXAM_SCORE_APPROVAL;
       } else {
-        application.approvedHostCourses = [];
-        application.approvedHomeCourses = [];
+        if (!comment?.trim()) {
+          return response.status(400).json({
+            message: "Comment is required when rejecting the transcript",
+          });
+        }
+
+        application.status = ApplicationStatus.MOBILITY_COMPLETED;
       }
 
       await application.save();
@@ -138,7 +141,7 @@ router.patch(
   authorize(UserRole.PROFESSOR),
   async (request: AuthenticatedRequest, response) => {
     try {
-      const { approvedExams, comment } = request.body;
+      const { reviews } = request.body;
 
       // Checks if application exists
       const application = await Applications.findById(request.params.id);
@@ -164,34 +167,62 @@ router.patch(
         return response.status(403).json({ message: "Forbidden" });
       }
 
-      if (!application.passedHostCourses) {
+      if (
+        !application.passedHostCourses ||
+        application.passedHostCourses.length === 0
+      ) {
         return response
           .status(400)
           .json({ message: "No passed exams to review" });
       }
 
       // Professor can approve or reject taken exams and scores
+      if (!Array.isArray(reviews)) {
+        return response
+          .status(400)
+          .json({ message: "Reviews must be an array" });
+      }
+
+      const submittedCourseIds = new Set(
+        application.passedHostCourses.map((exam) => exam.course.toString()),
+      );
+
+      const reviewsAreValid = reviews.every(
+        (review) =>
+          typeof review.courseId === "string" &&
+          typeof review.approved === "boolean" &&
+          submittedCourseIds.has(review.courseId),
+      );
+
+      if (!reviewsAreValid || reviews.length !== submittedCourseIds.size) {
+        return response.status(400).json({
+          message: "A review is required for each submitted host exam",
+        });
+      }
+
+      const rejectedReviewWithoutReason = reviews.some(
+        (review) => !review.approved && !review.comment?.trim(),
+      );
+
+      if (rejectedReviewWithoutReason) {
+        return response
+          .status(400)
+          .json({ message: "Rejected reviews must include a reason" });
+      }
+
       application.passedHostCourses = application.passedHostCourses.map(
         (exam) => {
-          const isApproved = approvedExams?.includes(exam.course.toString());
+          const review = reviews.find(
+            (item) => item.courseId === exam.course.toString(),
+          )!;
 
           return {
             ...exam,
-            status: isApproved ? "approved" : "rejected",
-            comment: isApproved
-              ? comment || "Exam approved by referent professor"
-              : comment || "Exam rejected by referent professor",
+            status: review.approved ? "approved" : "rejected",
+            comment: review.comment?.trim() || "",
           };
         },
       );
-
-      application.transcriptApproved =
-        application.passedHostCourses.every(
-          (exam) => exam.status === "approved",
-        ) || application.passedHostCourses.length === 0;
-
-      application.transcriptReviewDate = new Date();
-      application.transcriptComment = comment || "";
 
       application.status = ApplicationStatus.WAITING_FOR_EXAM_SCORE_APPROVAL;
 
@@ -296,33 +327,43 @@ router.patch(
       if (["approve_changes", "reject_changes"].includes(decision)) {
         if (
           !application.proposedHomeCourses?.length ||
-          !application.proposedHostCourses?.length
+          !application.proposedHostCourses?.length ||
+          !application.proposedDocumentPath
         ) {
-          response.status(400).json({
+          return response.status(400).json({
             message: "There are no pending course changes to review",
           });
-          return;
         }
 
         // If approved, stores the new courses and mapping
         if (decision === "approve_changes") {
           application.homeCourses = application.proposedHomeCourses;
           application.hostCourses = application.proposedHostCourses;
+          application.documentPath = application.proposedDocumentPath;
+          application.status =
+            ApplicationStatus.AWAITING_LEARNING_AGREEMENT_APPROVAL;
+          application.learningAgreementApproved = true;
           application.courseChangeStatus = CourseChangeStatus.APPROVED;
           application.courseChangeComment =
             comment || "Student course change approved";
-        } else if (decision === "reject_changes") {
+        }
+
+        if (decision === "reject_changes") {
+          if (!comment?.trim()) {
+            return response.status(400).json({
+              message: "A comment is required when rejecting course changes",
+            });
+          }
+
           application.courseChangeStatus = CourseChangeStatus.REJECTED;
-          application.courseChangeComment =
-            comment || "Student course change rejected; original mapping kept";
+          application.courseChangeComment = comment.trim();
         }
 
         application.courseChangeDecisionDate = new Date();
 
-        application.originalHomeCourses = undefined;
-        application.originalHostCourses = undefined;
         application.proposedHomeCourses = undefined;
         application.proposedHostCourses = undefined;
+        application.proposedDocumentPath = undefined;
 
         /* if (comment) {
           application.professorComment = comment;
@@ -345,6 +386,74 @@ router.patch(
         error,
       });
     }
+  },
+);
+
+// GET /api/professors/applications/:id/learning-agreement
+// Retrieves the learning agreement for a specific application
+router.get(
+  "/applications/:id/learning-agreement",
+  authenticate,
+  authorize(UserRole.PROFESSOR),
+  async (request: AuthenticatedRequest, response) => {
+    const professorId = await getProfessorProfileId(request.user!.userId);
+    const application = await Applications.findById(request.params.id);
+
+    if (
+      !professorId ||
+      !application ||
+      application.referentProfessor.toString() !== professorId
+    ) {
+      return response.status(403).json({ message: "Forbidden" });
+    }
+
+    response.download(application.documentPath);
+  },
+);
+
+// GET /api/professors/applications/:id/transcript
+// Retrieves the transcript for a specific application
+router.get(
+  "/applications/:id/transcript",
+  authenticate,
+  authorize(UserRole.PROFESSOR),
+  async (request: AuthenticatedRequest, response) => {
+    const professorId = await getProfessorProfileId(request.user!.userId);
+    const application = await Applications.findById(request.params.id);
+
+    if (
+      !professorId ||
+      !application ||
+      !application.transcriptDocumentPath ||
+      application.referentProfessor.toString() !== professorId
+    ) {
+      return response.status(403).json({ message: "Forbidden" });
+    }
+
+    response.download(application.transcriptDocumentPath);
+  },
+);
+
+// GET /api/professors/applications/:id/proposed-learning-agreement
+// Retrieves the proposed learning agreement for a specific application
+router.get(
+  "/applications/:id/proposed-learning-agreement",
+  authenticate,
+  authorize(UserRole.PROFESSOR),
+  async (request: AuthenticatedRequest, response) => {
+    const professorId = await getProfessorProfileId(request.user!.userId);
+    const application = await Applications.findById(request.params.id);
+
+    if (
+      !professorId ||
+      !application ||
+      !application.proposedDocumentPath ||
+      application.referentProfessor.toString() !== professorId
+    ) {
+      return response.status(403).json({ message: "Forbidden" });
+    }
+
+    response.download(application.proposedDocumentPath);
   },
 );
 

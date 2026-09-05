@@ -81,6 +81,7 @@ export interface ApplicationDocument {
   courseChangeComment?: string;
   courseChangeDecisionDate?: Date;
 
+  proposedDocumentPath?: string;
   documentPath: string;
   learningAgreementApproved?: boolean;
   status: ApplicationStatus;
@@ -153,6 +154,7 @@ const applicationSchema = new Schema<ApplicationDocument>(
     courseChangeComment: String,
     courseChangeDecisionDate: Date,
 
+    proposedDocumentPath: String,
     documentPath: {
       type: String,
       required: true,

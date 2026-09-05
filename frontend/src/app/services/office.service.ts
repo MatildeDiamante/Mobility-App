@@ -21,7 +21,7 @@ export class OfficeService {
 
   completePreDeparture(applicationId: string, comment = '') {
     return this.http.patch(
-      `${this.apiUrl}/applications/${applicationId}/ pre-departure`,
+      `${this.apiUrl}/applications/${applicationId}/pre-departure`,
       { comment },
       { withCredentials: true },
     );

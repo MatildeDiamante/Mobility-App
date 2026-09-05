@@ -66,6 +66,20 @@ export class ProfessorDashboardComponent implements OnInit {
     );
   }
 
+  // Get all applications with pending course change requests
+  get pendingChangeApplications(): any[] {
+    return this.applications.filter(
+      (application) => application.courseChangeStatus === 'pending',
+    );
+  }
+
+  // Get all applications with transcript documents
+  get transcriptApplications(): any[] {
+    return this.applications.filter((application) =>
+      Boolean(application.transcriptDocumentPath),
+    );
+  }
+
   decide(
     applicationId: string,
     decision: 'approve' | 'reject' | 'approve_changes' | 'reject_changes',
@@ -110,7 +124,7 @@ export class ProfessorDashboardComponent implements OnInit {
 
   // Review the exams of a specific application
   reviewExams(application: any): void {
-    const reviews = (application.passedHostCourese ?? []).map((exam: any) => {
+    const reviews = (application.passedHostCourses ?? []).map((exam: any) => {
       const courseId = this.courseId(exam.course);
       const review = this.examReviews[courseId];
 
@@ -158,7 +172,7 @@ export class ProfessorDashboardComponent implements OnInit {
   // Initialize the exam reviews for all applications
   private initializeExamReviews(): void {
     for (const application of this.applications) {
-      for (const exam of application.passedHostCourese ?? []) {
+      for (const exam of application.passedHostCourses ?? []) {
         const courseId = this.courseId(exam.course);
 
         if (!this.examReviews[courseId]) {

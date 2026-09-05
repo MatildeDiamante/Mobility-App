@@ -41,7 +41,7 @@ router.post("/login", async (request, response) => {
         });
         response.json({
             user: {
-                id: user._id,
+                id: user._id.toString(),
                 email: user.email,
                 role: user.role,
             },
@@ -57,10 +57,25 @@ router.post("/logout", (request, response) => {
     response.json({ message: "Logged out successfully" });
 });
 // GET /api/auth/me
-router.get("/me", auth_1.authenticate, (request, response) => {
-    response.json({
-        userId: request.user.userId,
-        role: request.user.role,
-    });
+router.get("/me", auth_1.authenticate, async (request, response) => {
+    try {
+        const user = await users_1.Users.findById(request.user.userId);
+        if (!user) {
+            response.status(401).json({
+                message: "User not found",
+            });
+            return;
+        }
+        response.json({
+            id: user._id.toString(),
+            email: user.email,
+            role: user.role,
+        });
+    }
+    catch {
+        response.status(500).json({
+            message: "Unable to load the current user",
+        });
+    }
 });
 exports.default = router;

@@ -19,7 +19,7 @@ exports.app = (0, express_1.default)();
 exports.app.use((0, helmet_1.default)());
 // Middleware cors
 exports.app.use((0, cors_1.default)({
-    origin: process.env.FRONTEND_URL ?? "http:localhost:4200",
+    origin: process.env.FRONTEND_URL ?? "http://localhost:4200",
     credentials: true, // with this Angular sends JWT cookies
 }));
 // Middleware that analyses JSON HTTP requests

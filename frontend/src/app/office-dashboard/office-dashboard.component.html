@@ -43,7 +43,7 @@
 
         <div class="courses-grid">
           <div>
-            <h4>Corsi home</h4>
+            <h4>Corsi Ca' Foscari</h4>
             <ul>
               @for (course of application.homeCourses; track course._id) {
                 <li>{{ courseLabel(course) }}</li>
@@ -52,7 +52,7 @@
           </div>
 
           <div>
-            <h4>Corsi host</h4>
+            <h4>Corsi università ospite</h4>
             <ul>
               @for (course of application.hostCourses; track course._id) {
                 <li>{{ courseLabel(course) }}</li>
@@ -121,7 +121,7 @@
         </div>
 
         <div>
-          <h4>Esami host approvati</h4>
+          <h4 class="approved-exams-heading">Esami approvati</h4>
 
           <ul class="exam-list">
             @for (

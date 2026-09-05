@@ -6,7 +6,8 @@
 
       @if (applicationStatus) {
         <p class="application-status">
-          Stato candidatura: {{ applicationStatus }}
+          Stato candidatura:
+          <span class="application-status-value">{{ applicationStatus }}</span>
         </p>
       }
     </div>
@@ -32,13 +33,17 @@
     </section>
   }
 
-  @if (!applicationExists) {
-    <section class="workflow-section" [formGroup]="initialApplicationForm">
+  @if (!applicationExists || showInitialApplicationForm) {
+    <section
+      class="workflow-section initial-application"
+      [formGroup]="initialApplicationForm"
+    >
       <div class="section-heading">
         <h2>Candidatura iniziale</h2>
         <p>
-          Inserisci i dati della mobilità e seleziona i tre abbinamenti tra i
-          corsi.
+          Inserisci il tuo Anno Accademico, la durata del periodo di mobilità e
+          scegli università ospite e professore referente. La esperienza
+          all'estero comincia da qui!
         </p>
       </div>
 
@@ -54,7 +59,11 @@
 
         <label>
           Durata della mobilità
-          <input type="text" placeholder="6 mesi" formControlName="duration" />
+          <input
+            type="text"
+            placeholder="Primo semestre, Secondo semestre, Un anno"
+            formControlName="duration"
+          />
         </label>
 
         <label>
@@ -88,25 +97,22 @@
         <div class="mapping-heading">
           <h3>Mapping dei corsi</h3>
           <p>
-            Seleziona tre corsi della home university e tre corsi della host
-            university.
+            Seleziona tre corsi di Ca' Foscari con i corsi offerti
+            dell'università scelta nel campo Candidatura iniziale. Ricorda che
+            potrai modificare il mapping dei corsi anche una volta arrivata/o
+            nella tua università prescelta.
           </p>
         </div>
 
-        <div formArrayName="homeCourses">
-          <h4>Corsi della home university</h4>
+        <div class="course-selection" formArrayName="homeCourses">
+          <h4>Corsi di Ca' Foscari</h4>
 
           @for (courseControl of initialHomeCourses.controls; track $index) {
             <label>
-              Corso home {{ $index + 1 }}
+              {{ ["Primo corso", "Secondo corso", "Terzo corso"][$index] }}
 
-              <select
-                [formControlName]="$index"
-                [disabled]="
-                  !initialApplicationForm.controls.hostUniversity.value
-                "
-              >
-                <option value="">Seleziona un corso home</option>
+              <select [formControlName]="$index">
+                <option value="">Seleziona un corso di Ca' Foscari</option>
 
                 @for (course of homeCourses; track course._id) {
                   <option
@@ -128,15 +134,20 @@
           }
         </div>
 
-        <div formArrayName="hostCourses">
-          <h4>Corsi della host university</h4>
+        <div class="course-selection" formArrayName="hostCourses">
+          <h4>Corsi dell'università estera scelta</h4>
 
           @for (courseControl of initialHostCourses.controls; track $index) {
             <label>
-              Corso host {{ $index + 1 }}
+              {{ ["Primo corso", "Secondo corso", "Terzo corso"][$index] }}
 
-              <select [formControlName]="$index">
-                <option value="">Seleziona un corso host</option>
+              <select
+                [formControlName]="$index"
+                [disabled]="
+                  !initialApplicationForm.controls.hostUniversity.value
+                "
+              >
+                <option value="">Seleziona un corso</option>
 
                 @for (course of hostCourses; track course._id) {
                   <option
@@ -159,15 +170,22 @@
         </div>
       </div>
 
-      <label class="upload-field">
-        Learning Agreement in PDF
+      <div class="upload-field">
+        <h3>Learning Agreement</h3>
+        <p>
+          Carica il Learning Agreement in formato PDF. Il professore referente
+          da te indicato lo visionerà al più presto.
+        </p>
 
-        <input
-          type="file"
-          accept="application/pdf"
-          (change)="selectLearningAgreement($event)"
-        />
-      </label>
+        <label>
+          Seleziona PDF
+          <input
+            type="file"
+            accept="application/pdf"
+            (change)="selectLearningAgreement($event)"
+          />
+        </label>
+      </div>
 
       @if (learningAgreementFile) {
         <p class="selected-file">
@@ -185,7 +203,7 @@
     </section>
   }
 
-  @if (applicationExists) {
+  @if (applicationExists && !showInitialApplicationForm) {
     <section class="workflow-section" [formGroup]="mobilityPeriodForm">
       <div class="section-heading">
         <h2>Modifica periodo di mobilità</h2>
@@ -211,26 +229,46 @@
       >
         Aggiorna periodo
       </button>
+
+      @if (mobilityPeriodMessage) {
+        <p class="form-message success-message">{{ mobilityPeriodMessage }}</p>
+      }
+
+      @if (mobilityPeriodError) {
+        <p class="form-message error-message">{{ mobilityPeriodError }}</p>
+      }
     </section>
 
-    <section class="workflow-section" [formGroup]="mappingProposalForm">
+    <section
+      class="workflow-section mapping-proposal"
+      [formGroup]="mappingProposalForm"
+    >
       <div class="section-heading">
         <h2>Proponi un nuovo mapping</h2>
         <p>Seleziona i nuovi corsi e allega un nuovo Learning Agreement.</p>
       </div>
 
       <div formArrayName="homeCourses">
-        <h3>Nuovi corsi home</h3>
+        <h3>Nuovi corsi Ca' Foscari</h3>
 
         @for (courseControl of proposedHomeCourses.controls; track $index) {
           <label>
-            Corso home {{ $index + 1 }}
+            {{ ["Primo corso", "Secondo corso", "Terzo corso"][$index] }}
 
             <select [formControlName]="$index">
-              <option value="">Seleziona un corso home</option>
+              <option value="">Seleziona un corso</option>
 
               @for (course of homeCourses; track course._id) {
-                <option [value]="course._id">
+                <option
+                  [value]="course._id"
+                  [disabled]="
+                    isProposedSelected(
+                      course._id,
+                      $any(courseControl.value),
+                      'home'
+                    )
+                  "
+                >
                   {{ course.code }} - {{ course.name }} -
                   {{ course.credits }} ECTS
                 </option>
@@ -241,17 +279,26 @@
       </div>
 
       <div formArrayName="hostCourses">
-        <h3>Nuovi corsi host</h3>
+        <h3>Nuovi corsi dell'università estera scelta</h3>
 
         @for (courseControl of proposedHostCourses.controls; track $index) {
           <label>
-            Corso host {{ $index + 1 }}
+            {{ ["Primo corso", "Secondo corso", "Terzo corso"][$index] }}
 
             <select [formControlName]="$index">
-              <option value="">Seleziona un corso host</option>
+              <option value="">Seleziona un corso</option>
 
               @for (course of hostCourses; track course._id) {
-                <option [value]="course._id">
+                <option
+                  [value]="course._id"
+                  [disabled]="
+                    isProposedSelected(
+                      course._id,
+                      $any(courseControl.value),
+                      'host'
+                    )
+                  "
+                >
                   {{ course.code }} - {{ course.name }} -
                   {{ course.credits }} ECTS
                 </option>
@@ -261,15 +308,18 @@
         }
       </div>
 
-      <label class="upload-field">
-        Nuovo Learning Agreement in PDF
+      <div class="upload-field new-learning-agreement">
+        <h3>Nuovo Learning Agreement in PDF</h3>
 
-        <input
-          type="file"
-          accept="application/pdf"
-          (change)="selectNewLearningAgreement($event)"
-        />
-      </label>
+        <label>
+          Seleziona PDF
+          <input
+            type="file"
+            accept="application/pdf"
+            (change)="selectNewLearningAgreement($event)"
+          />
+        </label>
+      </div>
 
       @if (newLearningAgreementFile) {
         <p class="selected-file">
@@ -278,31 +328,64 @@
         </p>
       }
 
+      @if (mappingProposalMessage) {
+        <p class="form-message success-message">{{ mappingProposalMessage }}</p>
+      }
+
+      @if (mappingProposalError) {
+        <p class="form-message error-message">{{ mappingProposalError }}</p>
+      }
+
       <button
         type="button"
         class="secondary-button"
         (click)="submitNewMapping()"
       >
-        Invia proposta di mapping
+        Invia nuova proposta di mapping
       </button>
     </section>
 
-    @if (applicationExists && applicationStatus === "mobility_in_progress") {
+    @if (
+      applicationExists &&
+      (applicationStatus === "mobility_in_progress" ||
+        applicationStatus === "professor_approved")
+    ) {
       <section class="workflow-section">
         <div class="section-heading">
           <h2>Conclusione della mobilità</h2>
           <p>Carica il Transcript of Records in formato PDF.</p>
         </div>
 
-        <label class="upload-field">
-          Transcript of Records
+        <div class="upload-field transcript-upload">
+          <h3>Transcript of Records</h3>
 
-          <input
-            type="file"
-            accept="application/pdf"
-            (change)="selectTranscript($event)"
-          />
-        </label>
+          <label>
+            Seleziona PDF
+            <input
+              type="file"
+              accept="application/pdf"
+              (change)="selectTranscript($event)"
+            />
+          </label>
+        </div>
+
+        <div class="host-exams" [formGroup]="passedExamsForm">
+          <h3>Esami dell'università ospite</h3>
+          <p>Inserisci il voto ottenuto per ogni corso.</p>
+
+          <div formArrayName="passedHostCourses">
+            @for (courseControl of passedHostCourses.controls; track $index) {
+              <label [formGroupName]="$index">
+                {{ courseLabel(hostCoursesForExams[$index]) }}
+                <input
+                  type="text"
+                  formControlName="grade"
+                  placeholder="Inserisci il voto"
+                />
+              </label>
+            }
+          </div>
+        </div>
 
         @if (transcriptFile) {
           <p class="selected-file">
@@ -312,13 +395,29 @@
 
         <button
           type="button"
-          class="primary-button"
-          [disabled]="!transcriptFile"
+          class="primary-button transcript-button"
+          [disabled]="!transcriptFile || passedExamsForm.invalid"
           (click)="uploadTranscript()"
         >
           Carica Transcript of Records
         </button>
+
+        @if (transcriptMessage) {
+          <p class="form-message success-message">{{ transcriptMessage }}</p>
+        }
+
+        @if (transcriptError) {
+          <p class="form-message error-message">{{ transcriptError }}</p>
+        }
       </section>
     }
+
+    <button
+      type="button"
+      class="return-button"
+      (click)="returnToInitialApplication()"
+    >
+      Torna alla candidatura iniziale
+    </button>
   }
 </main>

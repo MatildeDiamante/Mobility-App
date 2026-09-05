@@ -1,5 +1,6 @@
 // Upload PDFs and application creation
 import { Router } from "express";
+import mongoose from "mongoose";
 import multer from "multer";
 import {
   Applications,
@@ -260,6 +261,31 @@ router.post(
           .json({ message: "Transcript of Records PDF is required" });
       }
 
+      let passedHostCourses: { course: string; grade: string }[];
+
+      try {
+        passedHostCourses = JSON.parse(request.body.passedHostCourses);
+      } catch {
+        return response.status(400).json({
+          message: "passedHostCourses must be a valid JSON array",
+        });
+      }
+
+      if (
+        !Array.isArray(passedHostCourses) ||
+        passedHostCourses.length === 0 ||
+        passedHostCourses.some(
+          (exam) =>
+            typeof exam.course !== "string" ||
+            !exam.grade ||
+            !exam.grade.trim(),
+        )
+      ) {
+        return response.status(400).json({
+          message: "A grade is required for every host course",
+        });
+      }
+
       // Finds students' application
       const application = await Applications.findById(request.params.id);
 
@@ -282,11 +308,31 @@ router.post(
         });
       }
 
+      const applicationHostCourseIds = application.hostCourses.map((course) =>
+        course.toString(),
+      );
+      const submittedCourseIds = passedHostCourses.map((exam) => exam.course);
+
+      if (
+        new Set(submittedCourseIds).size !== applicationHostCourseIds.length ||
+        submittedCourseIds.length !== applicationHostCourseIds.length ||
+        submittedCourseIds.some(
+          (courseId) => !applicationHostCourseIds.includes(courseId),
+        )
+      ) {
+        return response.status(400).json({
+          message: "Grades must be provided once for every host course",
+        });
+      }
+
       // Checks that the mobility has been completed before allowing the transcript upload
-      if (application.status !== ApplicationStatus.MOBILITY_COMPLETED) {
+      if (
+        application.status !== ApplicationStatus.MOBILITY_COMPLETED &&
+        application.status !== ApplicationStatus.PROFESSOR_APPROVED
+      ) {
         return response.status(400).json({
           message:
-            "Transcript of Records can only be uploaded after mobility completion",
+            "Transcript of Records can only be uploaded after mobility completion or professor approval",
         });
       }
 
@@ -296,6 +342,12 @@ router.post(
       application.transcriptApproved = false;
       application.transcriptReviewDate = undefined;
       application.transcriptComment = undefined;
+      application.passedHostCourses = passedHostCourses.map((exam) => ({
+        course: new mongoose.Types.ObjectId(exam.course),
+        grade: exam.grade.trim(),
+        examDate: new Date(),
+        status: "pending",
+      }));
 
       application.status = ApplicationStatus.WAITING_FOR_EXAM_SCORE_APPROVAL;
       await application.save();
@@ -417,6 +469,7 @@ router.patch(
         ApplicationStatus.SUBMITTED,
         ApplicationStatus.PROFESSOR_APPROVED,
         ApplicationStatus.OFFICE_VERIFIED,
+        ApplicationStatus.PRE_DEPARTURE_COMPLETED,
         ApplicationStatus.MOBILITY_IN_PROGRESS,
       ].includes(application.status);
 
@@ -536,6 +589,8 @@ router.patch(
         } else {
           application.proposedHomeCourses = newHomeCourses;
           application.courseChangeStatus = CourseChangeStatus.PENDING;
+          application.status =
+            ApplicationStatus.AWAITING_LEARNING_AGREEMENT_APPROVAL;
         }
       }
 
@@ -549,6 +604,8 @@ router.patch(
         } else {
           application.proposedHostCourses = newHostCourses;
           application.courseChangeStatus = CourseChangeStatus.PENDING;
+          application.status =
+            ApplicationStatus.AWAITING_LEARNING_AGREEMENT_APPROVAL;
         }
       }
 
@@ -589,7 +646,7 @@ router.get(
         });
       }
 
-      if (application.student.toString() !== studentId) {
+      if (application.student._id.toString() !== studentId) {
         return response.status(403).json({ message: "Forbidden" });
       }
 

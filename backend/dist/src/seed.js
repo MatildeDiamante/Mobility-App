@@ -1,10 +1,16 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.seedDatabase = void 0;
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const professors_1 = require("../mongodbModels/professors");
 const exams_1 = require("../mongodbModels/exams");
 const students_1 = require("../mongodbModels/students");
 const universities_1 = require("../mongodbModels/universities");
+const users_1 = require("../mongodbModels/users");
+const userRole_1 = require("../mongodbModels/userRole");
 const seedDatabase = async () => {
     const count = await students_1.Students.countDocuments();
     if (count === 0) {
@@ -183,5 +189,42 @@ const seedDatabase = async () => {
             },
         ]);
     }
+    // Seed student and professor user accounts
+    const matilde = await students_1.Students.findOne({
+        fullName: "Matilde Moretti",
+    });
+    const professorMelonio = await professors_1.Professors.findOne({
+        fullName: "Prof.ssa Alessandra Melonio",
+    });
+    if (!matilde || !professorMelonio) {
+        throw new Error("Student or professor profile  is missing from the seed data");
+    }
+    const studentPasswordHash = await bcryptjs_1.default.hash("Password123!", 12);
+    // Creates the accounts of students, professors, and office staff
+    await users_1.Users.updateOne({ email: "907785@stud.unive.it" }, {
+        $set: {
+            email: "907785@stud.unive.it",
+            passwordHash: studentPasswordHash,
+            role: userRole_1.UserRole.STUDENT,
+            student: matilde._id,
+        },
+    }, { upsert: true });
+    const professorPasswordHash = await bcryptjs_1.default.hash("Password123!", 12);
+    await users_1.Users.updateOne({ email: "melonio@unive.it" }, {
+        $set: {
+            email: "melonio@unive.it",
+            passwordHash: professorPasswordHash,
+            role: userRole_1.UserRole.PROFESSOR,
+            professor: professorMelonio._id,
+        },
+    }, { upsert: true });
+    const officePasswordHash = await bcryptjs_1.default.hash("Password123!", 12);
+    await users_1.Users.updateOne({ email: "office@unive.it" }, {
+        $set: {
+            email: "office@unive.it",
+            passwordHash: officePasswordHash,
+            role: userRole_1.UserRole.OFFICE_STAFF,
+        },
+    }, { upsert: true });
 };
 exports.seedDatabase = seedDatabase;

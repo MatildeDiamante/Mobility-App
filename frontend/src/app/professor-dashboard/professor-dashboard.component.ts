@@ -25,6 +25,8 @@ export class ProfessorDashboardComponent implements OnInit {
   rejectionReason = '';
   transcriptComment = '';
   examReviews: Record<string, ExamReview> = {};
+  transcriptReviewMessage = '';
+  examReviewMessage = '';
 
   ngOnInit(): void {
     this.loadApplications();
@@ -105,6 +107,8 @@ export class ProfessorDashboardComponent implements OnInit {
 
   // Review the transcript of a specific application
   reviewTranscript(applicationId: string, approved: boolean): void {
+    this.transcriptReviewMessage = '';
+
     if (!approved && !this.transcriptComment.trim()) {
       return;
     }
@@ -114,6 +118,9 @@ export class ProfessorDashboardComponent implements OnInit {
       .subscribe({
         next: () => {
           this.transcriptComment = '';
+          this.transcriptReviewMessage = approved
+            ? 'Il Transcript of Records è stato approvato correttamente.'
+            : 'Il Transcript of Records è stato rifiutato correttamente.';
           this.loadApplications();
         },
         error: (error) => {
@@ -124,6 +131,8 @@ export class ProfessorDashboardComponent implements OnInit {
 
   // Review the exams of a specific application
   reviewExams(application: any): void {
+    this.examReviewMessage = '';
+
     const reviews = (application.passedHostCourses ?? []).map((exam: any) => {
       const courseId = this.courseId(exam.course);
       const review = this.examReviews[courseId];
@@ -137,6 +146,8 @@ export class ProfessorDashboardComponent implements OnInit {
 
     this.professorService.reviewExams(application._id, reviews).subscribe({
       next: () => {
+        this.examReviewMessage =
+          'La revisione degli esami è stata salvata correttamente.';
         this.loadApplications();
       },
       error: (error) => {

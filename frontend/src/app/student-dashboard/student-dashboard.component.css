@@ -9,8 +9,12 @@
 }
 
 .eyebrow {
+  display: inline-block;
   margin: 0 0 8px;
-  color: #166534;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: #5d2cd5;
+  color: #ffffff;
   font-size: 0.85rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -20,7 +24,7 @@ h1,
 h2,
 h3,
 h4 {
-  color: #1f2937;
+  color: #2e2448;
 }
 
 .application-selector {
@@ -32,18 +36,35 @@ h4 {
   min-height: 42px;
   box-sizing: border-box;
   padding: 8px 10px;
-  border: 1px solid #9ca3af;
+  border: 1px solid #ddd4f0;
   border-radius: 4px;
   background: #ffffff;
   font: inherit;
 }
 
+.application-selector label,
+.application-selector select {
+  font-family: "Poppins", sans-serif;
+}
+
+.application-status-value {
+  color: #ff578e;
+}
+
 .workflow-section {
   margin-top: 24px;
   padding: 24px;
-  border: 1px solid #d1d5db;
+  border: 1px solid #ddd4f0;
   border-radius: 8px;
-  background: #ffffff;
+  background: #fef7e1;
+}
+
+.initial-application {
+  box-shadow: 0 12px 28px rgba(46, 36, 72, 0.12);
+}
+
+.mapping-proposal {
+  box-shadow: 0 12px 28px rgba(46, 36, 72, 0.12);
 }
 
 .section-heading {
@@ -57,7 +78,7 @@ h4 {
 
 .section-heading p,
 .mapping-heading p {
-  color: #4b5563;
+  color: #665c7d;
 }
 
 .form-grid,
@@ -74,8 +95,12 @@ h4 {
 label {
   display: grid;
   gap: 6px;
-  color: #374151;
+  color: #2e2448;
   font-weight: 600;
+}
+
+.form-grid label {
+  font-family: "Poppins", sans-serif;
 }
 
 input,
@@ -83,10 +108,28 @@ select {
   min-height: 42px;
   box-sizing: border-box;
   padding: 8px 10px;
-  border: 1px solid #9ca3af;
+  border: 1px solid #ddd4f0;
   border-radius: 4px;
   background: #ffffff;
   font: inherit;
+}
+
+input::placeholder {
+  font-family: "Source Code Pro", monospace;
+  color: #665c7d;
+  opacity: 1;
+}
+
+select {
+  font-family: "Source Code Pro", monospace;
+}
+
+select:has(option:checked[value=""]) {
+  color: #665c7d;
+}
+
+option:not([value=""]) {
+  color: #2e2448;
 }
 
 .full-width {
@@ -106,15 +149,21 @@ select {
   margin-bottom: 12px;
 }
 
+.mapping-list h4 {
+  color: #ff578e;
+  font-family: "Poppins", sans-serif;
+}
+
 .mapping-list label {
   margin-top: 16px;
+  font-family: "Poppins", sans-serif;
 }
 
 .course-mapping {
   margin-top: 16px;
   padding: 20px;
-  border-left: 4px solid #15803d;
-  background: #f0fdf4;
+  border-left: 4px solid #ff578e;
+  background: #fef7e1;
 }
 
 .course-mapping h4,
@@ -127,9 +176,94 @@ select {
   margin-top: 24px;
 }
 
-.selected-file {
-  color: #166534;
+.upload-field h3,
+.upload-field p {
+  margin-top: 0;
+}
+
+.new-learning-agreement h3 {
+  color: #ff578e;
+}
+
+.transcript-upload h3 {
+  font-family: "Poppins", sans-serif;
+}
+
+.host-exams {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.host-exams h3 {
+  margin: 0;
+  color: #ff578e;
+  font-family: "Poppins", sans-serif;
+}
+
+.host-exams p {
+  margin: 0;
+  color: #665c7d;
+}
+
+.host-exams [formArrayName] {
+  display: grid;
+  gap: 12px;
+}
+
+.host-exams label {
+  font-family: "Poppins", sans-serif;
+}
+
+.upload-field p {
+  max-width: 56ch;
+  color: #665c7d;
+  overflow-wrap: anywhere;
+}
+
+.upload-field label {
+  font-family: "Poppins", sans-serif;
+}
+
+input[type="file"] {
+  color: #665c7d;
+  font-family: "Source Code Pro", monospace;
+}
+
+input[type="file"]::file-selector-button {
+  margin-right: 12px;
+  padding: 8px 10px;
+  border: 1px solid #5d2cd5;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #5d2cd5;
+  font-family: "Poppins", sans-serif;
   font-weight: 600;
+}
+
+.selected-file {
+  color: #5d2cd5;
+  font-family: "Source Code Pro", monospace;
+  font-weight: 600;
+}
+
+.form-message {
+  max-width: 64ch;
+  margin: 16px 0 0;
+  padding: 12px;
+  border-radius: 4px;
+}
+
+.success-message {
+  border: 1px solid #5d2cd5;
+  background: #f9f7ff;
+  color: #5d2cd5;
+}
+
+.error-message {
+  border: 1px solid #ff578e;
+  background: #fff0f5;
+  color: #b42318;
 }
 
 .primary-button,
@@ -145,13 +279,54 @@ select {
 }
 
 .primary-button {
-  background: #166534;
+  border: 1px solid #5d2cd5;
+  background: #5d2cd5;
   color: #ffffff;
+  font-family: "Poppins", sans-serif;
+}
+
+.primary-button:not(:disabled):hover {
+  background: #fef7e1;
+  color: #5d2cd5;
+}
+
+.transcript-button:not(:disabled):hover {
+  background: #f9f7ff;
 }
 
 .secondary-button {
-  background: #1d4ed8;
+  background: #5d2cd5;
+  border: 1px solid #5d2cd5;
   color: #ffffff;
+  font-family: "Poppins", sans-serif;
+}
+
+.secondary-button:not(:disabled):hover {
+  background: #f9f7ff;
+  color: #5d2cd5;
+}
+
+.return-button {
+  min-height: 42px;
+  margin-top: 24px;
+  padding: 0 16px;
+  border: 1px solid #5d2cd5;
+  border-radius: 4px;
+  background: #f9f7ff;
+  color: #5d2cd5;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  font-weight: 700;
+}
+
+.return-button:hover {
+  background: #5d2cd5;
+  color: #ffffff;
+}
+
+.mapping-proposal label,
+.mapping-proposal h3 {
+  font-family: "Poppins", sans-serif;
 }
 
 button:disabled {

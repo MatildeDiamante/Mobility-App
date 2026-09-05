@@ -9,8 +9,12 @@
 }
 
 .eyebrow {
+  display: inline-block;
   margin: 0 0 6px;
-  color: #176b63;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: #5d2cd5;
+  color: #ffffff;
   font-size: 0.85rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -20,7 +24,7 @@ h1,
 h2,
 h3,
 h4 {
-  color: #17324d;
+  color: #2e2448;
 }
 
 h1 {
@@ -29,7 +33,7 @@ h1 {
 
 .workflow-section {
   padding: 28px 0;
-  border-top: 1px solid #c9d4df;
+  border-top: 1px solid #ddd4f0;
 }
 
 .section-heading {
@@ -45,7 +49,7 @@ h1 {
 
 .section-heading p,
 .application-summary p {
-  color: #52616f;
+  color: #665c7d;
 }
 
 .application-card {
@@ -53,9 +57,9 @@ h1 {
   gap: 16px;
   margin-top: 16px;
   padding: 20px;
-  border: 1px solid #c9d4df;
+  border: 1px solid #ddd4f0;
   border-radius: 8px;
-  background: #ffffff;
+  background: #fef7e1;
 }
 
 .application-summary h3 {
@@ -73,8 +77,9 @@ h1 {
 }
 
 .document-link {
-  color: #176b63;
-  font-weight: 700;
+  color: #5d2cd5;
+  font-family: "Poppins", sans-serif;
+  font-weight: 500;
 }
 
 .courses-grid {
@@ -85,12 +90,15 @@ h1 {
 
 .courses-grid h4 {
   margin: 0 0 8px;
+  font-family: "Poppins", sans-serif;
 }
 
 .courses-grid ul,
 .exam-list {
   margin: 0;
   padding-left: 20px;
+  color: #665c7d;
+  font-family: "Source Code Pro", monospace;
 }
 
 .exam-list {
@@ -98,10 +106,15 @@ h1 {
   gap: 6px;
 }
 
+.approved-exams-heading {
+  font-family: "Poppins", sans-serif;
+}
+
 label {
   display: grid;
   gap: 6px;
-  color: #17324d;
+  color: #2e2448;
+  font-family: "Poppins", sans-serif;
   font-weight: 700;
 }
 
@@ -110,39 +123,46 @@ textarea {
   width: 100%;
   min-height: 80px;
   padding: 10px;
-  border: 1px solid #8da0b2;
+  border: 1px solid #c5b7e5;
   border-radius: 4px;
   font: inherit;
   resize: vertical;
+}
+
+textarea::placeholder {
+  color: #665c7d;
+  font-family: "Source Code Pro", monospace;
+  opacity: 1;
 }
 
 button {
   justify-self: start;
   min-height: 40px;
   padding: 8px 14px;
-  border: 1px solid #176b63;
+  border: 1px solid #5d2cd5;
   border-radius: 4px;
-  background: #176b63;
+  background: #5d2cd5;
   color: #ffffff;
   cursor: pointer;
-  font: inherit;
+  font-family: "Poppins", sans-serif;
   font-weight: 700;
 }
 
 button:hover {
-  background: #0f564f;
+  background: #f9f7ff;
+  color: #5d2cd5;
 }
 
 .error-message {
   padding: 12px;
-  border: 1px solid #f2b8b5;
+  border: 1px solid #ffb5cb;
   border-radius: 4px;
-  background: #fff4f3;
-  color: #b42318;
+  background: #fff0f5;
+  color: #d63268;
 }
 
 .empty-state {
-  color: #52616f;
+  color: #665c7d;
 }
 
 @media (max-width: 700px) {

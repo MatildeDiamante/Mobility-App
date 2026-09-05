@@ -8,33 +8,36 @@ import { AuthService } from '../services/auth.service';
   standalone: true,
   imports: [ReactiveFormsModule],
   template: ` <main class="login-page">
-    <form class="login-form" [formGroup]="loginForm" (ngSubmit)="submit()">
+    <div class="login-panel">
       <h1>Accedi</h1>
+      <p>Accedi e inizia la tua esperienza di mobilità all'estero</p>
 
-      <label for="email">Email</label>
-      <input
-        id="email"
-        type="email"
-        formControlName="email"
-        autocomplete="email"
-      />
+      <form class="login-form" [formGroup]="loginForm" (ngSubmit)="submit()">
+        <label for="email">Email</label>
+        <input
+          id="email"
+          type="email"
+          formControlName="email"
+          autocomplete="email"
+        />
 
-      <label for="password">Password</label>
-      <input
-        id="password"
-        type="password"
-        formControlName="password"
-        autocomplete="current-password"
-      />
+        <label for="password">Password</label>
+        <input
+          id="password"
+          type="password"
+          formControlName="password"
+          autocomplete="current-password"
+        />
 
-      @if (errorMessage) {
-        <p class="error-message">{{ errorMessage }}</p>
-      }
+        @if (errorMessage) {
+          <p class="error-message">{{ errorMessage }}</p>
+        }
 
-      <button type="submit" [disabled]="loginForm.invalid || isSubmitting">
-        {{ isSubmitting ? 'Accesso in corso...' : 'Accedi' }}
-      </button>
-    </form>
+        <button type="submit" [disabled]="loginForm.invalid || isSubmitting">
+          {{ isSubmitting ? 'Accesso in corso...' : 'Accedi' }}
+        </button>
+      </form>
+    </div>
   </main>`,
   styles: `
     .login-page {
@@ -50,11 +53,52 @@ import { AuthService } from '../services/auth.service';
       gap: 12px;
     }
 
+    .login-panel {
+      width: min(100%, 420px);
+      padding: 32px;
+      border-radius: 16px;
+      background: #fef7e1;
+      box-shadow: 0 12px 28px rgba(46, 36, 72, 0.14);
+    }
+
+    .login-panel h1,
+    .login-panel p {
+      margin-top: 0;
+    }
+
+    .login-panel p {
+      margin-bottom: 24px;
+      color: #665c7d;
+      font-family: 'Source Code Pro', monospace;
+    }
+
+    label,
+    button {
+      font-family: 'Source Code Pro', monospace;
+    }
+
     input,
     button {
       box-sizing: border-box;
       min-height: 42px;
       padding: 8px 12px;
+      border-radius: 10px;
+    }
+
+    input {
+      border: 1px solid #2c234d;
+    }
+
+    button {
+      border: 1px solid #5d2cd5;
+      background: #5d2cd5;
+      color: #ffffff;
+      cursor: pointer;
+    }
+
+    button:not(:disabled):hover {
+      background: #ffffff;
+      color: #5d2cd5;
     }
 
     .error-message {

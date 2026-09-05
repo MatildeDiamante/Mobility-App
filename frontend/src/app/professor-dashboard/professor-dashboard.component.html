@@ -61,7 +61,7 @@
 
             <div class="courses-grid">
               <div>
-                <h5>Corsi home</h5>
+                <h5>Corsi Ca' Foscari</h5>
                 <ul>
                   @for (course of application.homeCourses; track course._id) {
                     <li>{{ courseLabel(course) }}</li>
@@ -70,7 +70,7 @@
               </div>
 
               <div>
-                <h5>Corsi host</h5>
+                <h5>Corsi università ospite</h5>
                 <ul>
                   @for (course of application.hostCourses; track course._id) {
                     <li>{{ courseLabel(course) }}</li>
@@ -142,14 +142,14 @@
           <div>
             <h4>Mapping attuale</h4>
 
-            <h5>Corsi home</h5>
+            <h5>Corsi Ca' Foscari</h5>
             <ul>
               @for (course of application.homeCourses; track course._id) {
                 <li>{{ courseLabel(course) }}</li>
               }
             </ul>
 
-            <h5>Corsi host</h5>
+            <h5>Corsi università ospite</h5>
             <ul>
               @for (course of application.hostCourses; track course._id) {
                 <li>{{ courseLabel(course) }}</li>
@@ -160,7 +160,7 @@
           <div>
             <h4>Mapping proposto</h4>
 
-            <h5>Corsi home</h5>
+            <h5>Corsi Ca' Foscari</h5>
             <ul>
               @for (
                 course of application.proposedHomeCourses;
@@ -170,7 +170,7 @@
               }
             </ul>
 
-            <h5>Corsi host</h5>
+            <h5>Corsi università ospite</h5>
             <ul>
               @for (
                 course of application.proposedHostCourses;
@@ -265,9 +265,15 @@
           </button>
         </div>
 
+        @if (transcriptReviewMessage) {
+          <p class="form-message success-message">
+            {{ transcriptReviewMessage }}
+          </p>
+        }
+
         @if (application.transcriptApproved) {
           <div class="review-panel">
-            <h4>Esami host dichiarati</h4>
+            <h4>Esami dell'università ospite dichiarati</h4>
 
             @if (!application.passedHostCourses?.length) {
               <p class="empty-state">
@@ -294,9 +300,13 @@
                       track courseId(exam.course)
                     ) {
                       <tr>
-                        <td>{{ courseLabel(exam.course) }}</td>
-                        <td>{{ exam.grade }}</td>
-                        <td>{{ exam.examDate | date: "dd/MM/yyyy" }}</td>
+                        <td class="exam-value">
+                          {{ courseLabel(exam.course) }}
+                        </td>
+                        <td class="exam-value">{{ exam.grade }}</td>
+                        <td class="exam-value">
+                          {{ exam.examDate | date: "dd/MM/yyyy" }}
+                        </td>
                         <td>
                           <input
                             type="checkbox"
@@ -327,6 +337,12 @@
               >
                 Salva revisione esami
               </button>
+
+              @if (examReviewMessage) {
+                <p class="form-message success-message">
+                  {{ examReviewMessage }}
+                </p>
+              }
             }
           </div>
         }

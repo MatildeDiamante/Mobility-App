@@ -45,7 +45,9 @@ router.get(
       }
       const applications = await Applications.find({
         referentProfessor: professorProfileId,
-      }).populate("student hostUniversity homeCourses hostCourses");
+      }).populate(
+        "student hostUniversity homeCourses hostCourses proposedHomeCourses proposedHostCourses passedHostCourses.course",
+      );
 
       response.json(applications);
     } catch (error) {
@@ -348,8 +350,7 @@ router.patch(
           application.homeCourses = application.proposedHomeCourses;
           application.hostCourses = application.proposedHostCourses;
           application.documentPath = application.proposedDocumentPath;
-          application.status =
-            ApplicationStatus.AWAITING_LEARNING_AGREEMENT_APPROVAL;
+          application.status = ApplicationStatus.PROFESSOR_APPROVED;
           application.learningAgreementApproved = true;
           application.courseChangeStatus = CourseChangeStatus.APPROVED;
           application.courseChangeComment =

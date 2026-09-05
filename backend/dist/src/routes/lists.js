@@ -39,7 +39,7 @@ router.get("/professors", auth_1.authenticate, async (_request, response) => {
 // Get courses by type (home = Ca' Foscari, host = foreign university)
 router.get("/courses", auth_1.authenticate, async (request, response) => {
     try {
-        const { type } = request.query;
+        const { type, hostUniversity } = request.query;
         let query = {};
         // Filter by course type if provided
         if (type === "home") {
@@ -54,6 +54,9 @@ router.get("/courses", auth_1.authenticate, async (request, response) => {
                 message: "Type must be 'home' or 'host'",
             });
             return;
+        }
+        if (type === "host" && hostUniversity) {
+            query.hostUniversity = hostUniversity;
         }
         const courses = await exams_1.Courses.find(query).populate("hostUniversity").sort({
             name: 1,

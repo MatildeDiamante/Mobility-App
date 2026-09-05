@@ -45,6 +45,7 @@ var ApplicationStatus;
     ApplicationStatus["AWAITING_LEARNING_AGREEMENT_APPROVAL"] = "awaiting_learning_agreement_approval";
     ApplicationStatus["PRE_DEPARTURE_COMPLETED"] = "pre_departure_completed";
     ApplicationStatus["MOBILITY_IN_PROGRESS"] = "mobility_in_progress";
+    ApplicationStatus["MOBILITY_COMPLETED"] = "mobility_completed";
     ApplicationStatus["WAITING_FOR_EXAM_SCORE_APPROVAL"] = "waiting_for_exam_score_approval";
     ApplicationStatus["PROFESSOR_APPROVED"] = "professor_approved";
     ApplicationStatus["OFFICE_VERIFIED"] = "office_verified";
@@ -119,6 +120,7 @@ const applicationSchema = new mongoose_1.Schema({
     },
     courseChangeComment: String,
     courseChangeDecisionDate: Date,
+    proposedDocumentPath: String,
     documentPath: {
         type: String,
         required: true,

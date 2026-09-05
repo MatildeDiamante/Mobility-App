@@ -45,10 +45,18 @@ export class StudentDashboardComponent implements OnInit {
   learningAgreementFile: File | null = null;
   newLearningAgreementFile: File | null = null;
   transcriptFile: File | null = null;
+  hostCoursesForExams: CourseOption[] = [];
 
   // Applications status
   applicationExists = false;
+  showInitialApplicationForm = false;
   applicationStatus: string | null = null;
+  mappingProposalMessage = '';
+  mappingProposalError = '';
+  mobilityPeriodMessage = '';
+  mobilityPeriodError = '';
+  transcriptMessage = '';
+  transcriptError = '';
 
   // Application list and the selected application ID
   applications: any[] = [];
@@ -85,6 +93,10 @@ export class StudentDashboardComponent implements OnInit {
     endDate: ['', Validators.required],
   });
 
+  readonly passedExamsForm = this.formBuilder.group({
+    passedHostCourses: this.formBuilder.array<any>([]),
+  });
+
   // Form of the mapping proposal
   readonly mappingProposalForm = this.formBuilder.group({
     homeCourses: this.formBuilder.array(
@@ -116,7 +128,9 @@ export class StudentDashboardComponent implements OnInit {
         this.initialHostCourses.reset();
 
         if (!hostUniversityId) {
-          this.hostCourses = [];
+          if (!this.applicationExists) {
+            this.hostCourses = [];
+          }
           return;
         }
 
@@ -153,6 +167,10 @@ export class StudentDashboardComponent implements OnInit {
     return this.mappingProposalForm.controls.hostCourses;
   }
 
+  get passedHostCourses(): FormArray {
+    return this.passedExamsForm.controls.passedHostCourses;
+  }
+
   // Method to exclude already selected courses
   isInitiallySelected(
     courseId: string,
@@ -163,6 +181,22 @@ export class StudentDashboardComponent implements OnInit {
       courseType === 'home'
         ? this.initialHomeCourses.controls
         : this.initialHostCourses.controls;
+
+    return courseControls.some(
+      (control) =>
+        control.value === courseId && control.value !== currentCourseId,
+    );
+  }
+
+  isProposedSelected(
+    courseId: string,
+    currentCourseId: string | null,
+    courseType: 'home' | 'host',
+  ): boolean {
+    const courseControls =
+      courseType === 'home'
+        ? this.proposedHomeCourses.controls
+        : this.proposedHostCourses.controls;
 
     return courseControls.some(
       (control) =>
@@ -234,6 +268,17 @@ export class StudentDashboardComponent implements OnInit {
         this.selectedApplicationId = application._id;
         this.applicationStatus = application.status;
 
+        const hostUniversityId =
+          typeof application.hostUniversity === 'string'
+            ? application.hostUniversity
+            : application.hostUniversity?._id;
+
+        if (hostUniversityId) {
+          this.loadHostCourses(hostUniversityId);
+        }
+
+        this.setPassedHostCourses(application.hostCourses ?? []);
+
         this.mobilityPeriodForm.patchValue({
           startDate: this.toDateInputValue(application.startDate),
           endDate: this.toDateInputValue(application.endDate),
@@ -243,6 +288,10 @@ export class StudentDashboardComponent implements OnInit {
         console.error('Error during the loading of the application', error);
       },
     });
+  }
+
+  returnToInitialApplication(): void {
+    this.showInitialApplicationForm = true;
   }
 
   // Methods to select the files
@@ -265,6 +314,24 @@ export class StudentDashboardComponent implements OnInit {
     const file = input.files?.[0] ?? null;
 
     this.transcriptFile = this.getPdfFile(file, input);
+  }
+
+  private setPassedHostCourses(courses: CourseOption[]): void {
+    this.hostCoursesForExams = courses;
+    this.passedHostCourses.clear();
+
+    for (const course of courses) {
+      this.passedHostCourses.push(
+        this.formBuilder.group({
+          course: [course._id, Validators.required],
+          grade: ['', Validators.required],
+        }),
+      );
+    }
+  }
+
+  courseLabel(course: CourseOption): string {
+    return `${course.code} - ${course.name} (${course.credits} ECTS)`;
   }
 
   // Method to submit the forms
@@ -295,6 +362,7 @@ export class StudentDashboardComponent implements OnInit {
       .subscribe({
         next: (createdApplication: any) => {
           this.applicationExists = true;
+          this.showInitialApplicationForm = false;
           this.selectedApplicationId = createdApplication._id;
           this.applicationStatus = createdApplication.status ?? 'created';
 
@@ -311,8 +379,13 @@ export class StudentDashboardComponent implements OnInit {
 
   // Method to update the mobility period
   updateMobilityPeriod(): void {
+    this.mobilityPeriodMessage = '';
+    this.mobilityPeriodError = '';
+
     if (!this.selectedApplicationId || this.mobilityPeriodForm.invalid) {
       this.mobilityPeriodForm.markAllAsTouched();
+      this.mobilityPeriodError =
+        'Inserisci una data di inizio e una data di fine valide.';
       return;
     }
 
@@ -327,8 +400,13 @@ export class StudentDashboardComponent implements OnInit {
       .subscribe({
         next: (application: any) => {
           this.applicationStatus = application.status ?? this.applicationStatus;
+          this.mobilityPeriodMessage =
+            'Il periodo di mobilità è stato aggiornato correttamente.';
         },
         error: (error) => {
+          this.mobilityPeriodError =
+            error.error?.message ??
+            'Non è stato possibile aggiornare il periodo di mobilità.';
           console.error(
             'There was an error during the update of the mobility period',
             error,
@@ -357,12 +435,17 @@ export class StudentDashboardComponent implements OnInit {
 
   // Method to submit the new mapping proposal
   submitNewMapping(): void {
+    this.mappingProposalMessage = '';
+    this.mappingProposalError = '';
+
     if (
       !this.selectedApplicationId ||
       this.mappingProposalForm.invalid ||
       !this.newLearningAgreementFile
     ) {
       this.mappingProposalForm.markAllAsTouched();
+      this.mappingProposalError =
+        'Completa tutti i corsi e seleziona il nuovo Learning Agreement in PDF.';
       return;
     }
 
@@ -383,8 +466,15 @@ export class StudentDashboardComponent implements OnInit {
       .subscribe({
         next: (application: any) => {
           this.applicationStatus = application.status ?? this.applicationStatus;
+          this.mappingProposalMessage =
+            'La nuova proposta di mapping e il Learning Agreement sono stati inviati al professore referente.';
+          this.mappingProposalForm.reset();
+          this.newLearningAgreementFile = null;
         },
         error: (error) => {
+          this.mappingProposalError =
+            error.error?.message ??
+            'Non è stato possibile inviare la nuova proposta di mapping.';
           console.error(
             'Error during the submission of the new mapping',
             error,
@@ -395,17 +485,41 @@ export class StudentDashboardComponent implements OnInit {
 
   // Method to upload the transcript
   uploadTranscript(): void {
-    if (!this.selectedApplicationId || !this.transcriptFile) {
+    this.transcriptMessage = '';
+    this.transcriptError = '';
+
+    if (
+      !this.selectedApplicationId ||
+      !this.transcriptFile ||
+      this.passedExamsForm.invalid
+    ) {
+      this.passedExamsForm.markAllAsTouched();
+      this.transcriptError =
+        'Seleziona il Transcript of Records in PDF e inserisci il voto per ogni corso host.';
       return;
     }
 
+    const passedHostCourses = this.passedExamsForm.getRawValue()
+      .passedHostCourses as { course: string; grade: string }[];
+
     this.applicationsService
-      .uploadTranscript(this.selectedApplicationId, this.transcriptFile)
+      .uploadTranscript(
+        this.selectedApplicationId,
+        this.transcriptFile,
+        passedHostCourses,
+      )
       .subscribe({
         next: (application: any) => {
           this.applicationStatus = application.status ?? this.applicationStatus;
+          this.transcriptMessage =
+            'Il Transcript of Records e i voti degli esami sono stati inviati al professore referente.';
+          this.transcriptFile = null;
+          this.passedExamsForm.reset();
         },
         error: (error) => {
+          this.transcriptError =
+            error.error?.message ??
+            'Non è stato possibile inviare il Transcript of Records.';
           console.error('Error during the upload of the Transcript', error);
         },
       });

@@ -31,7 +31,7 @@ router.get(
       }
 
       const applications = await Applications.find(query).populate(
-        "student hostUniversity referentProfessor homeCourses hostCourses",
+        "student hostUniversity referentProfessor homeCourses hostCourses passedHostCourses.course",
       );
 
       response.json(applications);

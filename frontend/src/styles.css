@@ -1,1 +1,34 @@
-/* You can add global styles to this file, and also import other style files */
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Source+Code+Pro:wght@400;500;600&display=swap");
+
+:root {
+  --app-background: #f9f7ff;
+  --primary: #5d2cd5;
+  --primary-dark: #4820ad;
+  --secondary: #fef7e1;
+  --accent: #ff578e;
+  --text: #2e2448;
+  --muted-text: #665c7d;
+  --border: #ddd4f0;
+  --surface: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  margin: 0;
+  background: var(--app-background);
+  color: var(--text);
+}
+
+h1,
+h2,
+h3 {
+  font-family: "Poppins", sans-serif;
+}
+
+p {
+  font-family: "Source Code Pro", monospace;
+}

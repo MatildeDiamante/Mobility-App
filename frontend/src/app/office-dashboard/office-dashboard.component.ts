@@ -32,7 +32,7 @@ export class OfficeDashboardComponent implements OnInit {
   get finalReviewApplications(): any[] {
     return this.applications.filter(
       (application) =>
-        application.status === 'waiting_for_wxam_score_approval' &&
+        application.status === 'waiting_for_exam_score_approval' &&
         application.transcriptApproved === true &&
         application.passedHostCourses?.length > 0 &&
         application.passedHostCourses.every(
@@ -86,11 +86,11 @@ export class OfficeDashboardComponent implements OnInit {
       });
   }
 
-  learningAgreement(applicationId: string): string {
+  learningAgreementUrl(applicationId: string): string {
     return this.officeService.learningAgreementUrl(applicationId);
   }
 
-  transcript(applicationId: string): string {
+  transcriptUrl(applicationId: string): string {
     return this.officeService.transcriptUrl(applicationId);
   }
 

@@ -9,8 +9,12 @@
 }
 
 .eyebrow {
+  display: inline-block;
   margin: 0 0 6px;
-  color: #0b6e69;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: #5d2cd5;
+  color: #ffffff;
   font-size: 0.85rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -21,7 +25,7 @@ h2,
 h3,
 h4,
 h5 {
-  color: #17324d;
+  color: #2e2448;
 }
 
 h1 {
@@ -30,7 +34,7 @@ h1 {
 
 .application-section {
   padding: 28px 0;
-  border-top: 1px solid #c9d4df;
+  border-top: 1px solid #ddd4f0;
 }
 
 .section-heading {
@@ -44,7 +48,7 @@ h1 {
 
 .section-heading p {
   margin-top: 6px;
-  color: #52616f;
+  color: #665c7d;
 }
 
 .application-card {
@@ -52,9 +56,9 @@ h1 {
   gap: 16px;
   margin-top: 16px;
   padding: 20px;
-  border: 1px solid #c9d4df;
+  border: 1px solid #ddd4f0;
   border-radius: 8px;
-  background: #ffffff;
+  background: #fef7e1;
 }
 
 .application-summary h3,
@@ -64,7 +68,7 @@ h1 {
 
 .application-summary p {
   margin-top: 4px;
-  color: #52616f;
+  color: #665c7d;
 }
 
 .document-actions,
@@ -75,8 +79,9 @@ h1 {
 }
 
 .document-link {
-  color: #0b6e69;
-  font-weight: 700;
+  color: #5d2cd5;
+  font-family: "Poppins", sans-serif;
+  font-weight: 500;
 }
 
 .courses-grid {
@@ -88,24 +93,32 @@ h1 {
 .courses-grid h4,
 .courses-grid h5 {
   margin: 0 0 8px;
+  font-family: "Poppins", sans-serif;
 }
 
 .courses-grid ul {
   margin: 0;
   padding-left: 20px;
+  color: #665c7d;
+  font-family: "Source Code Pro", monospace;
 }
 
 .review-panel {
   display: grid;
   gap: 16px;
   padding-top: 16px;
-  border-top: 1px solid #dbe3ea;
+  border-top: 1px solid #ddd4f0;
+}
+
+.review-panel > h4 {
+  font-family: "Poppins", sans-serif;
 }
 
 label {
   display: grid;
   gap: 6px;
-  color: #17324d;
+  color: #2e2448;
+  font-family: "Poppins", sans-serif;
   font-weight: 700;
 }
 
@@ -114,7 +127,7 @@ input[type="text"] {
   width: 100%;
   box-sizing: border-box;
   padding: 10px;
-  border: 1px solid #8da0b2;
+  border: 1px solid #c5b7e5;
   border-radius: 4px;
   font: inherit;
 }
@@ -124,15 +137,21 @@ textarea {
   resize: vertical;
 }
 
+textarea::placeholder {
+  color: #665c7d;
+  font-family: "Source Code Pro", monospace;
+  opacity: 1;
+}
+
 button {
   min-height: 40px;
   padding: 8px 14px;
-  border: 1px solid #17324d;
+  border: 1px solid #5d2cd5;
   border-radius: 4px;
   background: #ffffff;
-  color: #17324d;
+  color: #5d2cd5;
   cursor: pointer;
-  font: inherit;
+  font-family: "Poppins", sans-serif;
   font-weight: 700;
 }
 
@@ -142,19 +161,29 @@ button:disabled {
 }
 
 .approve-button {
-  border-color: #16794b;
-  background: #16794b;
+  border-color: #5d2cd5;
+  background: #5d2cd5;
   color: #ffffff;
 }
 
 .reject-button {
-  border-color: #b42318;
+  border-color: #ff578e;
   background: #ffffff;
-  color: #b42318;
+  color: #d63268;
 }
 
 .empty-state {
-  color: #52616f;
+  color: #665c7d;
+}
+
+.form-message {
+  max-width: 64ch;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid #5d2cd5;
+  border-radius: 4px;
+  background: #f9f7ff;
+  color: #5d2cd5;
 }
 
 .exam-table-wrapper {
@@ -169,13 +198,24 @@ table {
 th,
 td {
   padding: 10px;
-  border-bottom: 1px solid #dbe3ea;
+  border-bottom: 1px solid #ddd4f0;
   text-align: left;
   vertical-align: middle;
 }
 
 th {
-  color: #17324d;
+  color: #2e2448;
+  font-family: "Poppins", sans-serif;
+}
+
+.exam-value {
+  font-family: "Source Code Pro", monospace;
+}
+
+.exam-table-wrapper input[type="text"]::placeholder {
+  color: #665c7d;
+  font-family: "Source Code Pro", monospace;
+  opacity: 1;
 }
 
 @media (max-width: 700px) {

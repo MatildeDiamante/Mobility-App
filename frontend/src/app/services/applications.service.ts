@@ -89,10 +89,15 @@ export class ApplicationsService {
     );
   }
 
-  uploadTranscript(applicationId: string, transcript: File) {
+  uploadTranscript(
+    applicationId: string,
+    transcript: File,
+    passedHostCourses: { course: string; grade: string }[],
+  ) {
     const formData = new FormData();
 
     formData.append('transcript', transcript);
+    formData.append('passedHostCourses', JSON.stringify(passedHostCourses));
 
     return this.http.post(
       `${this.apiUrl}/${applicationId}/transcript`,

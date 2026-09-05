@@ -1,0 +1,336 @@
+<main class="professor-dashboard">
+  <header class="page-header">
+    <p class="eyebrow">Area docenti</p>
+    <h1>Candidature assegnate</h1>
+  </header>
+
+  <section class="application-section">
+    <div class="section-heading">
+      <h2>Candidature iniziali</h2>
+      <p>Revisiona il Learning Agreement e prendi una decisione.</p>
+    </div>
+
+    @if (initialApplications.length === 0) {
+      <p class="empty-state">
+        Non ci sono candidature iniziali da revisionare.
+      </p>
+    }
+
+    @for (application of initialApplications; track application._id) {
+      <article class="application-card">
+        <div class="application-summary">
+          <h3>{{ application.student.fullName }}</h3>
+          <p>{{ application.hostUniversity.name }}</p>
+          <p>Anno accademico: {{ application.academicYear }}</p>
+        </div>
+
+        <a
+          class="document-link"
+          [href]="learningAgreementUrl(application._id)"
+          target="_blank"
+          rel="noopener"
+        >
+          Apri Learning Agreement
+        </a>
+
+        <button type="button" (click)="selectApplication(application)">
+          Visualizza corsi
+        </button>
+
+        <div class="action-row">
+          <button
+            type="button"
+            class="approve-button"
+            (click)="decide(application._id, 'approve')"
+          >
+            Approva candidatura
+          </button>
+
+          <button
+            type="button"
+            class="reject-button"
+            (click)="selectApplication(application)"
+          >
+            Rifiuta candidatura
+          </button>
+        </div>
+
+        @if (selectedApplication?._id === application._id) {
+          <div class="review-panel">
+            <h4>Mapping proposto</h4>
+
+            <div class="courses-grid">
+              <div>
+                <h5>Corsi home</h5>
+                <ul>
+                  @for (course of application.homeCourses; track course._id) {
+                    <li>{{ courseLabel(course) }}</li>
+                  }
+                </ul>
+              </div>
+
+              <div>
+                <h5>Corsi host</h5>
+                <ul>
+                  @for (course of application.hostCourses; track course._id) {
+                    <li>{{ courseLabel(course) }}</li>
+                  }
+                </ul>
+              </div>
+            </div>
+
+            <label>
+              Motivazione del rifiuto
+              <textarea
+                [(ngModel)]="rejectionReason"
+                placeholder="Inserisci una motivazione"
+              ></textarea>
+            </label>
+
+            <button
+              type="button"
+              class="reject-button"
+              [disabled]="!rejectionReason.trim()"
+              (click)="decide(application._id, 'reject')"
+            >
+              Conferma rifiuto
+            </button>
+          </div>
+        }
+      </article>
+    }
+  </section>
+
+  <section class="application-section">
+    <div class="section-heading">
+      <h2>Modifiche al mapping</h2>
+      <p>Confronta il mapping valido con la proposta dello studente.</p>
+    </div>
+
+    @if (pendingChangeApplications.length === 0) {
+      <p class="empty-state">Non ci sono modifiche in attesa di revisione.</p>
+    }
+
+    @for (application of pendingChangeApplications; track application._id) {
+      <article class="application-card">
+        <div class="application-summary">
+          <h3>{{ application.student.fullName }}</h3>
+          <p>{{ application.hostUniversity.name }}</p>
+        </div>
+
+        <div class="document-actions">
+          <a
+            class="document-link"
+            [href]="learningAgreementUrl(application._id)"
+            target="_blank"
+            rel="noopener"
+          >
+            Learning Agreement valido
+          </a>
+
+          <a
+            class="document-link"
+            [href]="proposedLearningAgreementUrl(application._id)"
+            target="_blank"
+            rel="noopener"
+          >
+            Learning Agreement proposto
+          </a>
+        </div>
+
+        <div class="courses-grid">
+          <div>
+            <h4>Mapping attuale</h4>
+
+            <h5>Corsi home</h5>
+            <ul>
+              @for (course of application.homeCourses; track course._id) {
+                <li>{{ courseLabel(course) }}</li>
+              }
+            </ul>
+
+            <h5>Corsi host</h5>
+            <ul>
+              @for (course of application.hostCourses; track course._id) {
+                <li>{{ courseLabel(course) }}</li>
+              }
+            </ul>
+          </div>
+
+          <div>
+            <h4>Mapping proposto</h4>
+
+            <h5>Corsi home</h5>
+            <ul>
+              @for (
+                course of application.proposedHomeCourses;
+                track course._id
+              ) {
+                <li>{{ courseLabel(course) }}</li>
+              }
+            </ul>
+
+            <h5>Corsi host</h5>
+            <ul>
+              @for (
+                course of application.proposedHostCourses;
+                track course._id
+              ) {
+                <li>{{ courseLabel(course) }}</li>
+              }
+            </ul>
+          </div>
+        </div>
+
+        <label>
+          Motivazione del rifiuto
+          <textarea
+            [(ngModel)]="rejectionReason"
+            placeholder="Obbligatoria se rifiuti la modifica"
+          ></textarea>
+        </label>
+
+        <div class="action-row">
+          <button
+            type="button"
+            class="approve-button"
+            (click)="decide(application._id, 'approve_changes')"
+          >
+            Approva modifiche
+          </button>
+
+          <button
+            type="button"
+            class="reject-button"
+            [disabled]="!rejectionReason.trim()"
+            (click)="decide(application._id, 'reject_changes')"
+          >
+            Rifiuta modifiche
+          </button>
+        </div>
+      </article>
+    }
+  </section>
+
+  <section class="application-section">
+    <div class="section-heading">
+      <h2>Transcript ed esami</h2>
+      <p>Approva il Transcript e revisiona gli esami svolti.</p>
+    </div>
+
+    @if (transcriptApplications.length === 0) {
+      <p class="empty-state">Non ci sono Transcript da revisionare.</p>
+    }
+
+    @for (application of transcriptApplications; track application._id) {
+      <article class="application-card">
+        <div class="application-summary">
+          <h3>{{ application.student.fullName }}</h3>
+          <p>{{ application.hostUniversity.name }}</p>
+        </div>
+
+        <a
+          class="document-link"
+          [href]="transcriptUrl(application._id)"
+          target="_blank"
+          rel="noopener"
+        >
+          Apri Transcript of Records
+        </a>
+
+        <label>
+          Commento sul Transcript
+          <textarea
+            [(ngModel)]="transcriptComment"
+            placeholder="Obbligatorio se il Transcript viene rifiutato"
+          ></textarea>
+        </label>
+
+        <div class="action-row">
+          <button
+            type="button"
+            class="approve-button"
+            (click)="reviewTranscript(application._id, true)"
+          >
+            Approva Transcript
+          </button>
+
+          <button
+            type="button"
+            class="reject-button"
+            [disabled]="!transcriptComment.trim()"
+            (click)="reviewTranscript(application._id, false)"
+          >
+            Rifiuta Transcript
+          </button>
+        </div>
+
+        @if (application.transcriptApproved) {
+          <div class="review-panel">
+            <h4>Esami host dichiarati</h4>
+
+            @if (!application.passedHostCourses?.length) {
+              <p class="empty-state">
+                Lo studente non ha ancora inserito esami.
+              </p>
+            }
+
+            @if (application.passedHostCourses?.length) {
+              <div class="exam-table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Corso</th>
+                      <th>Voto</th>
+                      <th>Data</th>
+                      <th>Approvato</th>
+                      <th>Commento</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    @for (
+                      exam of application.passedHostCourses;
+                      track courseId(exam.course)
+                    ) {
+                      <tr>
+                        <td>{{ courseLabel(exam.course) }}</td>
+                        <td>{{ exam.grade }}</td>
+                        <td>{{ exam.examDate | date: "dd/MM/yyyy" }}</td>
+                        <td>
+                          <input
+                            type="checkbox"
+                            [(ngModel)]="
+                              examReviews[courseId(exam.course)].approved
+                            "
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="text"
+                            [(ngModel)]="
+                              examReviews[courseId(exam.course)].comment
+                            "
+                            placeholder="Motivazione se rifiutato"
+                          />
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+
+              <button
+                type="button"
+                class="approve-button"
+                (click)="reviewExams(application)"
+              >
+                Salva revisione esami
+              </button>
+            }
+          </div>
+        }
+      </article>
+    }
+  </section>
+</main>
